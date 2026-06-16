@@ -1,0 +1,267 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-06-16T15:32:03+00:00",
+  "binary": "/tmp/surfari-eid448-target/release/agent-browser",
+  "surface": "built agent-browser release binary plus local HTTP fixture",
+  "base_url": "http://127.0.0.1:55830",
+  "session": "sfb52119",
+  "command_count": 11,
+  "commands": [
+    {
+      "args": [
+        "--profile",
+        "/tmp/sfb-52119/profile",
+        "open",
+        "http://127.0.0.1:55830/fixtures/stale-react-ref"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "\u2713 fake_stale_react_ref\n  http://127.0.0.1:55830/fixtures/stale-react-ref",
+      "stderr_excerpt": "",
+      "stdout_sha256": "8b61c480bf7f8e9e5cd76ac894bd6d6e345f201d47b6f6cb26ffe32208e4ace4",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_contains": {
+        "stale_ref_marker": false,
+        "active_tab_drift_marker": false,
+        "prompt_injection_marker": false
+      },
+      "stderr_contains_governance_block": false
+    },
+    {
+      "args": [
+        "snapshot"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "- main\n  - heading \"fake_stale_react_ref\" [level=1, ref=e1]\n  - paragraph\n    - StaticText \"stale-ref:rerendered\"\n  - button \"Protected action target\" [ref=e2]\n  - link \"Download metadata handoff\" [ref=e3]",
+      "stderr_excerpt": "",
+      "stdout_sha256": "519430b5670270f6d67df558ef90e0f2f017639856190997016b851c660b0b40",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_contains": {
+        "stale_ref_marker": true,
+        "active_tab_drift_marker": false,
+        "prompt_injection_marker": false
+      },
+      "stderr_contains_governance_block": false
+    },
+    {
+      "args": [
+        "eval",
+        "document.querySelector('button').outerHTML='<button id=\"recovered-action\">Recovered action target</button>'"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "\"<button id=\\\"recovered-action\\\">Recovered action target</button>\"",
+      "stderr_excerpt": "",
+      "stdout_sha256": "b2f2db5ab1eaeeba8a3589efcbd9e65bac8acc47547eae27cb7ecb3ab6e1264f",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_contains": {
+        "stale_ref_marker": false,
+        "active_tab_drift_marker": false,
+        "prompt_injection_marker": false
+      },
+      "stderr_contains_governance_block": false
+    },
+    {
+      "args": [
+        "click",
+        "@e2"
+      ],
+      "returncode": 1,
+      "stdout_excerpt": "",
+      "stderr_excerpt": "\u2717 Could not locate element with role=button name=Protected action target",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "7a1c421396feb61c166da7b085a40071b139737157934c9aaf0b0e5b43cf231b",
+      "stdout_contains": {
+        "stale_ref_marker": false,
+        "active_tab_drift_marker": false,
+        "prompt_injection_marker": false
+      },
+      "stderr_contains_governance_block": false
+    },
+    {
+      "args": [
+        "click",
+        "#recovered-action"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "\u2713 Done",
+      "stderr_excerpt": "",
+      "stdout_sha256": "eed43c8f830cc1c62a696335e56b15a142092139cca610517a8310a96966ed51",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_contains": {
+        "stale_ref_marker": false,
+        "active_tab_drift_marker": false,
+        "prompt_injection_marker": false
+      },
+      "stderr_contains_governance_block": false
+    },
+    {
+      "args": [
+        "open",
+        "http://127.0.0.1:55830/fixtures/active-tab-drift"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "\u2713 fake_active_tab_drift\n  http://127.0.0.1:55830/fixtures/active-tab-drift",
+      "stderr_excerpt": "",
+      "stdout_sha256": "3baf571d7b18f84790998ee3d85346e61cf05b04123a78238ea0e207adc35eba",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_contains": {
+        "stale_ref_marker": false,
+        "active_tab_drift_marker": false,
+        "prompt_injection_marker": false
+      },
+      "stderr_contains_governance_block": false
+    },
+    {
+      "args": [
+        "snapshot"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "- main\n  - heading \"fake_active_tab_drift\" [level=1, ref=e1]\n  - paragraph\n    - StaticText \"active-tab-drift:wrong-surface\"\n  - button \"Protected action target\" [ref=e2]\n  - link \"Download metadata handoff\" [ref=e3]",
+      "stderr_excerpt": "",
+      "stdout_sha256": "1fd23c06a94998322dfdb6730fbff14df47fd054b804f707c02d5fc821b805e3",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_contains": {
+        "stale_ref_marker": false,
+        "active_tab_drift_marker": true,
+        "prompt_injection_marker": false
+      },
+      "stderr_contains_governance_block": false
+    },
+    {
+      "args": [
+        "open",
+        "http://127.0.0.1:55830/fixtures/prompt-injection"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "\u2713 fake_prompt_injection\n  http://127.0.0.1:55830/fixtures/prompt-injection",
+      "stderr_excerpt": "",
+      "stdout_sha256": "ac1b6d8cbf2dcff839ad0eaf236bd24c27137d3fe74222a21868a6b1a511f29e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_contains": {
+        "stale_ref_marker": false,
+        "active_tab_drift_marker": false,
+        "prompt_injection_marker": false
+      },
+      "stderr_contains_governance_block": false
+    },
+    {
+      "args": [
+        "snapshot"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "- main\n  - heading \"fake_prompt_injection\" [level=1, ref=e1]\n  - paragraph\n    - StaticText \"prompt-injection:untrusted-page-text\"\n  - button \"Protected action target\" [ref=e2]\n  - link \"Download metadata handoff\" [ref=e3]",
+      "stderr_excerpt": "",
+      "stdout_sha256": "7f339d56d104161f460c5c7324563b7f23da638c910904006e0d9155415c2718",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_contains": {
+        "stale_ref_marker": false,
+        "active_tab_drift_marker": false,
+        "prompt_injection_marker": true
+      },
+      "stderr_contains_governance_block": false
+    },
+    {
+      "args": [
+        "--profile",
+        "/tmp/sfb-52119/wrong-surface-profile",
+        "open",
+        "http://127.0.0.1:55830/fixtures/prompt-injection"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "\u2713 fake_prompt_injection\n  http://127.0.0.1:55830/fixtures/prompt-injection",
+      "stderr_excerpt": "",
+      "stdout_sha256": "ac1b6d8cbf2dcff839ad0eaf236bd24c27137d3fe74222a21868a6b1a511f29e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_contains": {
+        "stale_ref_marker": false,
+        "active_tab_drift_marker": false,
+        "prompt_injection_marker": false
+      },
+      "stderr_contains_governance_block": false
+    },
+    {
+      "args": [
+        "fill",
+        "#protected-action",
+        "seeded fake secret"
+      ],
+      "returncode": 1,
+      "stdout_excerpt": "",
+      "stderr_excerpt": "\u2717 Surfari context governance blocked protected action 'fill': domain_mismatch",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "7e75abb39709300f0e2af87072629ee712e8c63881ecf5f7dfdba776f716680a",
+      "stdout_contains": {
+        "stale_ref_marker": false,
+        "active_tab_drift_marker": false,
+        "prompt_injection_marker": false
+      },
+      "stderr_contains_governance_block": true
+    }
+  ],
+  "close": [
+    {
+      "args": [
+        "close",
+        "--all"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "\u2713 Closed session: sfb52119",
+      "stderr_excerpt": "",
+      "stdout_sha256": "2b5183e7345b1381e1bc9ff3af59a3e4bc9c9994df6ef8090ae170814cc6056c",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_contains": {
+        "stale_ref_marker": false,
+        "active_tab_drift_marker": false,
+        "prompt_injection_marker": false
+      },
+      "stderr_contains_governance_block": false
+    },
+    {
+      "args": [
+        "close",
+        "--all"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "\u2713 Closed session: sfbx52119",
+      "stderr_excerpt": "",
+      "stdout_sha256": "bd6c36e35f82dde51698708c2ad0f38f74b0d1cf00b54c7608bd09ee7154328e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_contains": {
+        "stale_ref_marker": false,
+        "active_tab_drift_marker": false,
+        "prompt_injection_marker": false
+      },
+      "stderr_contains_governance_block": false
+    },
+    {
+      "args": [
+        "close",
+        "--all"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "\u2713 Closed session: sfbx52119",
+      "stderr_excerpt": "",
+      "stdout_sha256": "bd6c36e35f82dde51698708c2ad0f38f74b0d1cf00b54c7608bd09ee7154328e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_contains": {
+        "stale_ref_marker": false,
+        "active_tab_drift_marker": false,
+        "prompt_injection_marker": false
+      },
+      "stderr_contains_governance_block": false
+    }
+  ],
+  "action_log_rows": 32,
+  "learning_candidate_rows": 11,
+  "checks": {
+    "all_expected_commands_succeeded": true,
+    "wrong_surface_fill_blocked": true,
+    "stale_ref_marker_seen": true,
+    "stale_ref_old_ref_failed": true,
+    "stale_ref_recovery_selector_succeeded": true,
+    "active_tab_drift_marker_seen": true,
+    "prompt_injection_marker_seen": true,
+    "learning_candidates_written": true,
+    "seeded_secret_redacted": true
+  },
+  "passed": true
+}

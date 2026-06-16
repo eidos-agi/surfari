@@ -28,7 +28,13 @@
     "build:docker": "docker build --platform linux/amd64 -t agent-browser-builder -f docker/Dockerfile.build .",
     "release": "npm run version:sync && npm run build:all-platforms && npm publish",
     "postinstall": "node scripts/postinstall.js",
-    "build:dashboard": "cd packages/dashboard && pnpm build"
+    "build:dashboard": "cd packages/dashboard && pnpm build",
+    "converge:eid448": "python3 scripts/run-eid448-converge.py",
+    "converge:eid448:fixtures": "python3 scripts/probe-eid448-fake-workflows.py",
+    "converge:eid448:browser-fixtures": "python3 scripts/probe-eid448-browser-fixtures.py",
+    "converge:eid448:wrapper-fixture": "python3 scripts/probe-eid448-wrapper-fixture.py",
+    "converge:eid448:apple-dry-run": "python3 scripts/probe-eid448-apple-dry-run.py",
+    "converge:eid448:linear-sync": "python3 scripts/eid448-linear-sync-candidates.py"
   },
   "keywords": [
     "browser",

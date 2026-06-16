@@ -1,0 +1,83 @@
+template_id: rb-surfari-apple-dev-metadata-dry-run
+version: 0.1.0
+name: Surfari Apple Developer metadata-only dry run
+description: >
+  Govern the Knox Apple Developer profile-session workflow as a metadata-only
+  browser evaluation. The runbook proves local fixtures, wrapper routing,
+  allowed-domain navigation, and human-gate detection while explicitly stopping
+  before login, MFA, passkeys, legal agreements, payments, provisioning profile
+  download, profile install, or final submission.
+risk_level: critical
+allowed_environments: [local]
+requires_human_signoff: true
+
+steps:
+  - step_id: s1
+    description: Refresh the generated 50x50 Surfari/Converge matrix and score report.
+    allowed_tools: [Bash, Read]
+    denied_tools: [browser_fill, browser_click, browser_download, apple_login, profile_install]
+    required_evidence: [path, min_lines]
+    verification_method: verify_file_exists
+    verification_tier: tier1
+    timeout_seconds: 600
+    on_fail: block
+
+  - step_id: s2
+    description: Prove local fake browser workflows, including stale-ref recovery and redaction, against fixtures only.
+    allowed_tools: [Bash, Read]
+    denied_tools: [browser_fill, browser_click, browser_download, apple_login, profile_install]
+    required_evidence: [path, min_lines]
+    verification_method: verify_file_exists
+    verification_tier: tier1
+    timeout_seconds: 600
+    on_fail: block
+
+  - step_id: s3
+    description: Prove the Eidos wrapper routes to the Surfari fork binary without protected Apple actions.
+    allowed_tools: [Bash, Read]
+    denied_tools: [browser_fill, browser_click, browser_download, apple_login, profile_install]
+    required_evidence: [path, min_lines]
+    verification_method: verify_file_exists
+    verification_tier: tier1
+    timeout_seconds: 600
+    on_fail: block
+
+  - step_id: s4
+    description: Refresh the Apple Developer metadata-only dry run and prove the browser stopped at an allowed human gate.
+    allowed_tools: [Bash, Read]
+    denied_tools: [browser_fill, browser_click, browser_download, apple_login, profile_install]
+    required_evidence: [path, min_lines]
+    verification_method: verify_file_exists
+    verification_tier: tier1
+    timeout_seconds: 900
+    on_fail: escalate_human
+
+  - step_id: s5
+    description: Record human metadata-only Apple team confirmation or keep T048 blocked.
+    allowed_tools: [Read, Edit]
+    denied_tools: [browser_fill, browser_click, browser_download, apple_login, profile_install]
+    required_evidence: [path, min_lines]
+    verification_method: verify_file_exists
+    verification_tier: tier1
+    timeout_seconds: 86400
+    on_fail: escalate_human
+
+  - step_id: s6
+    description: Record explicit profile download/install handoff approval or keep T049 blocked.
+    allowed_tools: [Read, Edit]
+    denied_tools: [browser_fill, browser_click, browser_download, apple_login, profile_install]
+    required_evidence: [path, min_lines]
+    verification_method: verify_file_exists
+    verification_tier: tier1
+    timeout_seconds: 86400
+    on_fail: escalate_human
+
+  - step_id: s7
+    description: "Final proof review: no secrets or provisioning profile contents were stored, and remaining blocked rows are explicit."
+    allowed_tools: [Bash, Read]
+    denied_tools: [browser_fill, browser_click, browser_download, apple_login, profile_install]
+    required_evidence: [path, min_lines]
+    verification_method: verify_file_exists
+    verification_tier: tier1
+    timeout_seconds: 600
+    on_fail: block

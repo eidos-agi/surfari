@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "north_star": "Surfari safely resumes account-sensitive Apple Developer workflows by passing increasingly realistic governance matrices while reducing humans to front-loaded policy approvals and explicit identity/legal/payment/release gates.",
+  "stages": [
+    {
+      "matrix_id": "M1",
+      "name": "Repo and Build Matrix",
+      "proof_class": "pass_real_surface",
+      "human_approval_required": false,
+      "rows": 14,
+      "counts": {
+        "pass": 14,
+        "fail": 0,
+        "blocked": 0,
+        "skip": 0
+      },
+      "unlock_state": "pass",
+      "next_blocking_rows": []
+    },
+    {
+      "matrix_id": "M2",
+      "name": "Governance Logic Matrix",
+      "proof_class": "pass_controlled_harness",
+      "human_approval_required": false,
+      "rows": 10,
+      "counts": {
+        "pass": 10,
+        "fail": 0,
+        "blocked": 0,
+        "skip": 0
+      },
+      "unlock_state": "pass",
+      "next_blocking_rows": []
+    },
+    {
+      "matrix_id": "M3",
+      "name": "Daemon and Logs Matrix",
+      "proof_class": "pass_controlled_harness",
+      "human_approval_required": false,
+      "rows": 7,
+      "counts": {
+        "pass": 7,
+        "fail": 0,
+        "blocked": 0,
+        "skip": 0
+      },
+      "unlock_state": "pass",
+      "next_blocking_rows": []
+    },
+    {
+      "matrix_id": "M4",
+      "name": "Fake Browser Workflow Matrix",
+      "proof_class": "pass_controlled_harness",
+      "human_approval_required": false,
+      "rows": 13,
+      "counts": {
+        "pass": 13,
+        "fail": 0,
+        "blocked": 0,
+        "skip": 0
+      },
+      "unlock_state": "pass",
+      "next_blocking_rows": []
+    },
+    {
+      "matrix_id": "M5",
+      "name": "Real Knox Apple Dry Run Matrix",
+      "proof_class": "pass_real_surface",
+      "human_approval_required": true,
+      "rows": 6,
+      "counts": {
+        "pass": 3,
+        "fail": 0,
+        "blocked": 3,
+        "skip": 0
+      },
+      "unlock_state": "blocked",
+      "next_blocking_rows": [
+        "EID448-T048",
+        "EID448-T049",
+        "EID448-T050"
+      ]
+    }
+  ]
+}

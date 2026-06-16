@@ -296,6 +296,16 @@ These environment variables configure additional daemon and runtime behavior:
     <tr><td><code>AGENT_BROWSER_SOCKET_DIR</code></td><td>Advanced override for daemon socket files.</td><td>runtime dir or <code>~/.agent-browser</code></td></tr>
     <tr><td><code>AGENT_BROWSER_SKILLS_DIR</code></td><td>Override the directory used by <code>agent-browser skills</code>.</td><td>bundled skills</td></tr>
     <tr><td><code>AGENT_BROWSER_COLOR</code></td><td>Enable colored CLI output when truthy.</td><td>(disabled)</td></tr>
+    <tr><td><code>SURFARI_USE_ID</code></td><td>Per-use id for redacted Surfari action logs and learning candidates.</td><td>(daily fallback)</td></tr>
+    <tr><td><code>SURFARI_ACTION_LOG_PATH</code></td><td>Override the Surfari action log JSONL path for tests or harnesses.</td><td><code>~/.cache/surfari/...</code></td></tr>
+    <tr><td><code>SURFARI_CONTEXT_ID</code></td><td>Active Surfari context id attached to action logs.</td><td>(none)</td></tr>
+    <tr><td><code>SURFARI_ORG_ID</code></td><td>Active organization/workspace id for context-aware browsing.</td><td>(none)</td></tr>
+    <tr><td><code>SURFARI_ACCOUNT_ID</code></td><td>Active account or tenant id for context-aware browsing.</td><td>(none)</td></tr>
+    <tr><td><code>SURFARI_PROFILE_ID</code></td><td>Active browser/profile id for context-aware browsing.</td><td>(none)</td></tr>
+    <tr><td><code>SURFARI_SUBJECT_ID</code></td><td>Active user/persona id for context-aware browsing.</td><td>(none)</td></tr>
+    <tr><td><code>SURFARI_KNOX_REF</code></td><td>Knox credential/access reference, not a secret value.</td><td>(none)</td></tr>
+    <tr><td><code>SURFARI_EXPECTED_DOMAINS</code></td><td>Comma-separated expected domains for the active context.</td><td>(none)</td></tr>
+    <tr><td><code>SURFARI_BROWSER_PROFILE_PATH</code></td><td>Browser profile path, persisted only as byte length and SHA-256 hash.</td><td>(none)</td></tr>
     <tr><td><code>NO_COLOR</code></td><td>Disable colored output when present.</td><td>(not set)</td></tr>
     <tr><td><code>AI_GATEWAY_URL</code></td><td>Vercel AI Gateway base URL.</td><td><code>https://ai-gateway.vercel.sh</code></td></tr>
     <tr><td><code>AI_GATEWAY_API_KEY</code></td><td>API key for the Vercel AI Gateway. Required to enable AI chat.</td><td>(none)</td></tr>

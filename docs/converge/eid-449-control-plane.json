@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "linear_control_issue": "EID-449",
+  "linear_project_name": "Converge",
+  "project_status": "project_shell_blocked_by_linear_tool_surface",
+  "north_star": "Converge turns Eidos product goals into ordered recursive matrix chains that improve through evidence rows, repair queues, research loops, and front-loaded human approvals.",
+  "convergence_style": {
+    "primary": "staged_maturity",
+    "secondary": [
+      "regression_hardening",
+      "drift_homeostasis",
+      "exploratory_narrowing"
+    ],
+    "why": "The system must advance from planned rows to controlled harness proof to real account-sensitive browser proof without false green."
+  },
+  "seed_cases": [
+    {
+      "issue": "EID-448",
+      "name": "Surfari Knox Apple Developer profile-session workflow",
+      "path": "docs/converge/eid-448",
+      "regenerate_command": "python3 scripts/run-eid448-converge.py",
+      "package_manager_command": "pnpm converge:eid448",
+      "score_report": "docs/converge/eid-448/score_report.md",
+      "current_artifacts": [
+        "docs/plans/eid-448-test-coverage-matrix.json",
+        "docs/plans/eid-448-test-coverage-heatmap.svg",
+        "docs/converge/eid-448/converge_rows.jsonl",
+        "docs/converge/eid-448/repair_queue.json",
+        "docs/converge/eid-448/research_loops.jsonl",
+        "docs/converge/eid-448/stage_summary.json",
+        "docs/converge/eid-448/evidence_heatmap.svg",
+        "docs/converge/eid-448/approval_packets/apple-developer-knox-profile-resume.v1.json"
+      ]
+    }
+  ],
+  "linear_sync_policy": {
+    "create_issue_when": "A repair row is stable, high priority, has a clear target/probe gap, and cannot be fixed in the current small local slice.",
+    "do_not_sync_when": "The row is still exploratory, duplicates an existing EID, requires raw secrets, or depends on login/MFA/legal/payment/final submission authority.",
+    "temporary_query_label": "Converge"
+  },
+  "human_authority_boundaries": [
+    "login",
+    "MFA",
+    "passkeys",
+    "legal agreements",
+    "payments",
+    "final submissions",
+    "credential or secret disclosure"
+  ]
+}

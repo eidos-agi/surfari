@@ -1,0 +1,20 @@
+{
+  "cerebro_available": false,
+  "cerebro_path": "",
+  "ab_available": true,
+  "ab_path": "/Users/dshanklin/repos-eidos-agi/eidosagi.com/tools/agent-browser/ab",
+  "agent_browser_available": false,
+  "agent_browser_path": "",
+  "cerebro_profiles": {
+    "surfari": [
+      "surfari"
+    ],
+    "surfari-local": [
+      "surfari-local"
+    ],
+    "surfari-local-email": [
+      "surfari-local",
+      "email"
+    ]
+  }
+}

@@ -1,0 +1,5 @@
+[2026-06-16T14:15:58.298897+00:00] run.start          allow    system.run_started                     Started runbook rb-surfari-apple-dev-metadata-dry-run v0.1.0
+[2026-06-16T14:16:16.611671+00:00] step.complete      allow    verifier.verify_file_exists            Step s1 verified; advancing to s2
+[2026-06-16T14:18:01.619762+00:00] step.complete      allow    verifier.verify_file_exists            Step s2 verified; advancing to s3
+[2026-06-16T14:18:09.747983+00:00] step.complete      allow    verifier.verify_file_exists            Step s3 verified; advancing to s4
+[2026-06-16T14:18:09.999695+00:00] step.complete      allow    verifier.verify_file_exists            Step s4 verified; advancing to s5

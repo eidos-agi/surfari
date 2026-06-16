@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-16T15:32:06+00:00",
+  "mode": "dry_run_candidates",
+  "create_rule": "Only stable non-policy, non-blocked repair rows with specific next actions become candidates.",
+  "candidate_count": 0,
+  "candidates": []
+}
