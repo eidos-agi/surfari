@@ -1,0 +1,20 @@
+---
+id: "f98f47a6-0e1b-45e8-9dc6-19128ac1b1d4"
+project: "Surfari Governed Browser"
+created: "2026-06-14"
+version: 1
+---
+
+# .stepproof/config.yaml — per-project StepProof configuration.
+# See docs/PROJECT_STATE.md for the full shape. Mirrors .visionlog conventions.
+
+default_environment: local
+
+runbook_dirs:
+  - .stepproof/runbooks
+
+override_dirs:
+  - .stepproof/overrides
+
+shadow: false
+fail_closed_rings: []

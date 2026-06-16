@@ -11,6 +11,23 @@ Playwright or Puppeteer dependency. Accessibility-tree snapshots with compact
 `@eN` refs let agents interact with pages in ~200-400 tokens instead of
 parsing raw HTML.
 
+This Surfari fork records redacted daemon-side action events for learning.
+Set `SURFARI_USE_ID=<use-id>` to write action events under
+`~/.cache/surfari/uses/<use-id>/browser-actions.jsonl` and learning candidates
+under `~/.cache/surfari/uses/<use-id>/learning-candidates.jsonl`. For tests or
+harnesses, `SURFARI_ACTION_LOG_PATH=<path>` overrides the action log path.
+`SURFARI_CONTEXT_ID=<context-id>`, `SURFARI_ORG_ID=<org-id>`,
+`SURFARI_ACCOUNT_ID=<account-id>`, `SURFARI_PROFILE_ID=<profile-id>`,
+`SURFARI_SUBJECT_ID=<subject-id>`, `SURFARI_KNOX_REF=<knox-ref>`, and
+`SURFARI_EXPECTED_DOMAINS=<domains>` attach structured governance context to
+each action row. `SURFARI_BROWSER_PROFILE_PATH=<path>` is persisted only as
+byte length and SHA-256 hash.
+Secrets, cookies, headers, credential values, and raw page text are not logged.
+When Surfari context is active, protected actions outside expected domains are
+blocked. Known human-gate domains such as `idmsa.apple.com` can be inspected
+with read-only commands, but protected actions fail closed with
+`human_gate_required`.
+
 Most normal web tasks (navigate, read, click, fill, extract, screenshot) are
 covered here. Load a specialized skill when the task falls outside browser
 web pages — see [When to load another skill](#when-to-load-another-skill).

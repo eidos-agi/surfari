@@ -376,7 +376,9 @@ fn minimal_command(action: &str, id: &str) -> Value {
 
 #[tokio::test]
 async fn test_all_documented_actions_are_handled() {
+    let _key_guard = TestKeyGuard::new();
     let mut state = DaemonState::new();
+    state.test_no_auto_launch = true;
 
     for (i, action) in DOCUMENTED_ACTIONS.iter().enumerate() {
         let id = format!("parity-{}", i);
@@ -418,6 +420,7 @@ async fn test_success_response_format() {
 #[tokio::test]
 async fn test_error_response_format() {
     let mut state = DaemonState::new();
+    state.test_no_auto_launch = true;
     let cmd = json!({ "action": "nonexistent_action_xyz", "id": "fmt-2" });
     let result = execute_command(&cmd, &mut state).await;
 
@@ -502,17 +505,13 @@ async fn test_auth_save_and_show() {
 #[tokio::test]
 async fn test_har_start_stop_without_browser() {
     let mut state = DaemonState::new();
-    // har_start requires a browser. Because execute_command auto-launches when
-    // no browser is present, the result depends on Chrome availability: success
-    // if Chrome is found (CI), failure if not. Both outcomes are valid.
+    state.test_no_auto_launch = true;
+    // This is a no-browser parity test; browser launch behavior is covered by e2e tests.
     let cmd = json!({ "action": "har_start", "id": "har-1" });
     let result = execute_command(&cmd, &mut state).await;
-    let success = result["success"].as_bool().unwrap_or(false);
-    if success {
-        assert!(state.har_recording);
-    } else {
-        assert!(result["error"].as_str().is_some());
-    }
+    assert_eq!(result["success"], false);
+    assert!(result["error"].as_str().is_some());
+    assert!(!state.har_recording);
 }
 
 #[tokio::test]
@@ -632,6 +631,7 @@ fn test_matches_status_filter() {
 #[tokio::test]
 async fn test_addscript_and_addinitscript_separate_dispatch() {
     let mut state = DaemonState::new();
+    state.test_no_auto_launch = true;
 
     // Both should be handled (not "Not yet implemented") even without a browser
     let cmd1 = json!({ "action": "addscript", "id": "as-1", "content": "console.log(1)" });
@@ -668,6 +668,7 @@ async fn test_frame_context_management() {
 #[tokio::test]
 async fn test_addstyle_supports_content_and_url() {
     let mut state = DaemonState::new();
+    state.test_no_auto_launch = true;
 
     // Both content-based and url-based addstyle should be recognized
     let cmd1 = json!({ "action": "addstyle", "id": "style-1", "content": "body { color: red }" });

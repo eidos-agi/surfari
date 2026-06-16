@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "packet_id": "apple-developer-knox-profile-resume.v1",
+  "workflow": "Eidos Knox Apple Developer profile resume",
+  "status": "draft_requires_human_approval",
+  "real_dry_run_gate": "blocked_until_m1_m4_required_rows_are_green_or_explicitly_owned",
+  "intended_product": "Eidos Knox",
+  "local_target": "KnoxiPhone",
+  "bundle_id": "ai.eidos.knox.iphone",
+  "team_id": "LJWV44N8BF",
+  "server_profile_name": "Eidos Knox App Store Connect 2026-06-14",
+  "allowed_domains": [
+    "developer.apple.com",
+    "idmsa.apple.com"
+  ],
+  "allowed_actions": [
+    "read_page_metadata",
+    "capture_browser_anchor",
+    "detect_expected_domain",
+    "detect_human_gate",
+    "record_redacted_action_log",
+    "record_profile_download_handoff_metadata",
+    "write_linear_proof_summary"
+  ],
+  "forbidden_actions": [
+    "enter_apple_password",
+    "enter_mfa_or_otp",
+    "approve_passkey",
+    "accept_legal_terms",
+    "change_payment_or_billing",
+    "submit_app_review",
+    "download_or_install_profile_without_human_approval",
+    "read_or_store_raw_knox_secret",
+    "store_provisioning_profile_contents"
+  ],
+  "human_gates": [
+    "Apple Sign In",
+    "MFA",
+    "passkey",
+    "legal agreement",
+    "payment",
+    "profile download approval",
+    "local provisioning profile install approval",
+    "release or publish approval"
+  ],
+  "stop_conditions": [
+    "unexpected domain",
+    "unexpected Apple Team ID",
+    "credential prompt",
+    "MFA or passkey prompt",
+    "legal or payment prompt",
+    "unclassified mutation",
+    "raw secret requested",
+    "browser profile mismatch",
+    "web-account session mismatch"
+  ],
+  "secret_policy": "Knox refs only; no raw credential values in chat, docs, logs, screenshots, Linear, or matrix rows.",
+  "front_loaded_human_decisions_needed": [
+    "Approve this packet before any real Apple dry run.",
+    "Approve whether wrapper routing may point at the forked local binary.",
+    "Approve profile download/install if Apple Sign In is cleared and the expected profile row is visible."
+  ],
+  "preconditions_before_real_run": [
+    "M1 repo/build rows are either passing or have explicit owner and unblock command.",
+    "M2 governance logic rows pass deterministic tests.",
+    "M3 daemon/log rows prove metadata logging and redaction through the action-log path.",
+    "M4 fake browser workflow rows prove redirect, human-gate, stale-ref, active-tab drift, download handoff, multi-account, and prompt-injection harnesses without real Apple.",
+    "Local wrapper routing to the Surfari fork is approved and verified, or the dry run is explicitly scoped to source-level proof only.",
+    "Human operator is present for Apple login, MFA, passkey, legal, payment, profile download, and local profile install decisions."
+  ],
+  "current_gate_state": {
+    "as_of": "2026-06-14T21:04:00Z",
+    "status": "blocked",
+    "reason": "M2, M3, and M4 are green and the wrapper mechanics passed in a temporary clone. Remaining gates are actual real-wrapper mutation/installation approval and real Apple dry-run authority.",
+    "allowed_now": [
+      "read local matrix artifacts",
+      "run deterministic local tests",
+      "run fake workflow fixture probes",
+      "run temporary wrapper-clone fixture probe",
+      "prepare Linear proof summaries",
+      "request explicit wrapper-routing and real-Apple dry-run approval"
+    ],
+    "not_allowed_now": [
+      "automate Apple login",
+      "enter MFA or approve passkey",
+      "download or install provisioning profile",
+      "accept legal or payment prompts",
+      "perform final submission or release action"
+    ]
+  }
+}

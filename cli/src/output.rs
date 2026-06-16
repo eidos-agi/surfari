@@ -3292,6 +3292,16 @@ Environment:
   AGENT_BROWSER_SCREENSHOT_DIR   Default screenshot output directory
   AGENT_BROWSER_SCREENSHOT_QUALITY JPEG quality 0-100
   AGENT_BROWSER_SCREENSHOT_FORMAT Screenshot format: png, jpeg
+  SURFARI_USE_ID                  Per-use id for redacted Surfari action logs
+  SURFARI_ACTION_LOG_PATH         Override Surfari action log JSONL path
+  SURFARI_CONTEXT_ID              Active Surfari context id attached to logs
+  SURFARI_ORG_ID                  Active organization/workspace id
+  SURFARI_ACCOUNT_ID              Active account/tenant id
+  SURFARI_PROFILE_ID              Active browser/profile id
+  SURFARI_SUBJECT_ID              Active user/persona id
+  SURFARI_KNOX_REF                Knox credential/access reference
+  SURFARI_EXPECTED_DOMAINS        Comma-separated expected domains
+  SURFARI_BROWSER_PROFILE_PATH    Browser profile path, logged as hash
   AI_GATEWAY_URL                 Vercel AI Gateway base URL (default: https://ai-gateway.vercel.sh)
   AI_GATEWAY_API_KEY             API key for the AI Gateway (enables chat command and dashboard AI chat)
   AI_GATEWAY_MODEL               Default AI model (default: anthropic/claude-sonnet-4.6, or --model flag)

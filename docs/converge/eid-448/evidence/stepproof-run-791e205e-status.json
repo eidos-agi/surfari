@@ -1,0 +1,142 @@
+{
+  "run": {
+    "run_id": "791e205e-cd01-4ef6-b96f-a3ba548768f1",
+    "template_id": "rb-surfari-apple-dev-metadata-dry-run",
+    "template_version": "0.1.0",
+    "owner_id": "codex",
+    "agent_id": "codex",
+    "environment": "local",
+    "current_step": "s5",
+    "status": "active",
+    "started_at": "2026-06-16T14:15:58.271894Z",
+    "ended_at": null
+  },
+  "steps": [
+    {
+      "run_id": "791e205e-cd01-4ef6-b96f-a3ba548768f1",
+      "step_id": "s1",
+      "status": "verified",
+      "evidence": {
+        "min_lines": "10",
+        "path": "docs/converge/eid-448/score_report.md"
+      },
+      "verification_result": {
+        "status": "pass",
+        "confidence": 1.0,
+        "reason": "docs/converge/eid-448/score_report.md exists with 40 non-empty lines.",
+        "artifacts": {
+          "lines": 40,
+          "path": "docs/converge/eid-448/score_report.md"
+        },
+        "verifier_id": "verify_file_exists",
+        "tier_used": "tier1",
+        "latency_ms": 0
+      },
+      "attempts": 1,
+      "started_at": "2026-06-16T14:16:16.527661Z",
+      "ended_at": "2026-06-16T14:16:16.560995Z"
+    },
+    {
+      "run_id": "791e205e-cd01-4ef6-b96f-a3ba548768f1",
+      "step_id": "s2",
+      "status": "verified",
+      "evidence": {
+        "min_lines": "1",
+        "path": "docs/converge/eid-448/evidence/fake_workflow_probe.json"
+      },
+      "verification_result": {
+        "status": "pass",
+        "confidence": 1.0,
+        "reason": "docs/converge/eid-448/evidence/fake_workflow_probe.json exists with 105 non-empty lines.",
+        "artifacts": {
+          "lines": 105,
+          "path": "docs/converge/eid-448/evidence/fake_workflow_probe.json"
+        },
+        "verifier_id": "verify_file_exists",
+        "tier_used": "tier1",
+        "latency_ms": 0
+      },
+      "attempts": 1,
+      "started_at": "2026-06-16T14:18:01.567416Z",
+      "ended_at": "2026-06-16T14:18:01.618289Z"
+    },
+    {
+      "run_id": "791e205e-cd01-4ef6-b96f-a3ba548768f1",
+      "step_id": "s3",
+      "status": "verified",
+      "evidence": {
+        "min_lines": "1",
+        "path": "docs/converge/eid-448/evidence/wrapper_fixture_probe.json"
+      },
+      "verification_result": {
+        "status": "pass",
+        "confidence": 1.0,
+        "reason": "docs/converge/eid-448/evidence/wrapper_fixture_probe.json exists with 63 non-empty lines.",
+        "artifacts": {
+          "lines": 63,
+          "path": "docs/converge/eid-448/evidence/wrapper_fixture_probe.json"
+        },
+        "verifier_id": "verify_file_exists",
+        "tier_used": "tier1",
+        "latency_ms": 0
+      },
+      "attempts": 1,
+      "started_at": "2026-06-16T14:18:09.735879Z",
+      "ended_at": "2026-06-16T14:18:09.746533Z"
+    },
+    {
+      "run_id": "791e205e-cd01-4ef6-b96f-a3ba548768f1",
+      "step_id": "s4",
+      "status": "verified",
+      "evidence": {
+        "min_lines": "1",
+        "path": "docs/converge/eid-448/evidence/apple_dry_run_probe.json"
+      },
+      "verification_result": {
+        "status": "pass",
+        "confidence": 1.0,
+        "reason": "docs/converge/eid-448/evidence/apple_dry_run_probe.json exists with 83 non-empty lines.",
+        "artifacts": {
+          "lines": 83,
+          "path": "docs/converge/eid-448/evidence/apple_dry_run_probe.json"
+        },
+        "verifier_id": "verify_file_exists",
+        "tier_used": "tier1",
+        "latency_ms": 30
+      },
+      "attempts": 1,
+      "started_at": "2026-06-16T14:18:09.948545Z",
+      "ended_at": "2026-06-16T14:18:09.998582Z"
+    },
+    {
+      "run_id": "791e205e-cd01-4ef6-b96f-a3ba548768f1",
+      "step_id": "s5",
+      "status": "pending",
+      "evidence": {},
+      "verification_result": null,
+      "attempts": 0,
+      "started_at": null,
+      "ended_at": null
+    },
+    {
+      "run_id": "791e205e-cd01-4ef6-b96f-a3ba548768f1",
+      "step_id": "s6",
+      "status": "pending",
+      "evidence": {},
+      "verification_result": null,
+      "attempts": 0,
+      "started_at": null,
+      "ended_at": null
+    },
+    {
+      "run_id": "791e205e-cd01-4ef6-b96f-a3ba548768f1",
+      "step_id": "s7",
+      "status": "pending",
+      "evidence": {},
+      "verification_result": null,
+      "attempts": 0,
+      "started_at": null,
+      "ended_at": null
+    }
+  ]
+}
