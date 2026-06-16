@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-06-16T15:32:06+00:00",
+  "source_wrapper": "/Volumes/MacMiniStorage/Eidos/repos-eidos-agi/eidosagi.com/tools/agent-browser/ab",
+  "temporary_wrapper": "/tmp/sfw-52366/agent-browser/ab",
+  "binary": "/tmp/surfari-eid448-target/release/agent-browser",
+  "surface": "temporary clone of Eidos ab wrapper plus built Surfari binary",
+  "base_url": "http://127.0.0.1:55867",
+  "commands": [
+    {
+      "args": [
+        "--version"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "agent-browser 0.27.1",
+      "stderr_excerpt": "",
+      "saw_fake_workflow": false,
+      "saw_version": true
+    },
+    {
+      "args": [
+        "--profile",
+        "/tmp/sfw-52366/profile",
+        "open",
+        "http://127.0.0.1:55867/fixtures/prompt-injection"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "\u2713 fake_prompt_injection\n  http://127.0.0.1:55867/fixtures/prompt-injection",
+      "stderr_excerpt": "",
+      "saw_fake_workflow": true,
+      "saw_version": false
+    },
+    {
+      "args": [
+        "snapshot"
+      ],
+      "returncode": 0,
+      "stdout_excerpt": "- main\n  - heading \"fake_prompt_injection\" [level=1, ref=e1]\n  - paragraph\n    - StaticText \"prompt-injection:untrusted-page-text\"\n  - button \"Protected action target\" [ref=e2]\n  - link \"Download metadata handoff\" [ref=e3]",
+      "stderr_excerpt": "",
+      "saw_fake_workflow": true,
+      "saw_version": false
+    }
+  ],
+  "close": {
+    "args": [
+      "close",
+      "--all"
+    ],
+    "returncode": 0,
+    "stdout_excerpt": "\u2713 Closed session: sfw52366",
+    "stderr_excerpt": "",
+    "saw_fake_workflow": false,
+    "saw_version": false
+  },
+  "action_log_rows": 8,
+  "checks": {
+    "version_routes_to_built_binary": true,
+    "wrapper_opened_fake_workflow": true,
+    "wrapper_snapshotted_fake_workflow": true,
+    "surfari_action_logs_written": true
+  },
+  "passed": true
+}

@@ -67,3 +67,15 @@ docs/package-lock.json
 # next
 .next/
 out/
+
+# StepProof runtime state (machine-specific, ephemeral).
+# NOTE: .stepproof/ itself is TRACKED — the layout mirrors .visionlog/.
+# Only these child paths are runtime noise.
+.stepproof/sessions/
+.stepproof/audit-buffer.jsonl
+.stepproof/adapter-manifest.json
+.stepproof/runs/
+.stepproof/events.jsonl
+.stepproof/runtime.url
+.stepproof/active-run.json
+.shipr/

@@ -1,0 +1,766 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-06-14T19:40:00-05:00",
+  "default_status": "fail",
+  "default_probe": "No evidence captured yet.",
+  "probes": {
+    "1": {
+      "class": "pass",
+      "probe": "pwd and repo path inspection",
+      "evidence": "/Volumes/MacMiniStorage/Eidos/repos-eidos-agi/surfari exists and contains agent-browser fork files.",
+      "next_action": "Keep repo path in the proof envelope for future runs.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "filesystem",
+        "proof_id": "eid448-local-repo-path-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": [],
+        "fails_to_test": ["remote freshness", "build correctness"]
+      }
+    },
+    "2": {
+      "class": "pass",
+      "probe": "git remote -v",
+      "evidence": "origin git@github.com:eidos-agi/surfari.git; upstream https://github.com/vercel-labs/agent-browser.git.",
+      "next_action": "Recheck before any merge or release.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "git remotes",
+        "proof_id": "eid448-remotes-20260614",
+        "external_dependencies": ["GitHub SSH remote metadata"],
+        "bypassed_controls": [],
+        "side_effects": [],
+        "fails_to_test": ["branch freshness", "remote permissions"]
+      }
+    },
+    "3": {
+      "class": "pass",
+      "probe": "git branch --show-current and git rev-parse HEAD",
+      "evidence": "branch codex/surfari-learning-shim at 328ce8a98560ac7bac8fa81f53a718822550b94e.",
+      "next_action": "Recheck after upstream sync decision.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "git branch state",
+        "proof_id": "eid448-branch-head-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": [],
+        "fails_to_test": ["working tree quality", "build correctness"]
+      }
+    },
+    "4": {
+      "class": "pass",
+      "probe": "git fetch origin upstream --prune; git rev-list --left-right --count HEAD...upstream/main",
+      "evidence": "upstream/main at 2c7991c9eccca1c9db6eee1a26a713414778de5a; local branch 0 ahead / 5 behind upstream/main.",
+      "next_action": "Decide whether to rebase or merge before local wrapper routing.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "git refs",
+        "proof_id": "eid448-upstream-position-20260614",
+        "external_dependencies": ["GitHub upstream fetch"],
+        "bypassed_controls": [],
+        "side_effects": ["fetched git refs only"],
+        "fails_to_test": ["merge conflicts", "upstream compatibility"]
+      }
+    },
+    "5": {
+      "class": "pass",
+      "probe": "git status --short --branch",
+      "evidence": "Working tree is dirty with existing learning-shim files, docs/plans, and new EID-448 artifacts.",
+      "next_action": "Do not mix upstream sync, wrapper routing, and matrix forge work in one unreviewed merge.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "git status",
+        "proof_id": "eid448-dirty-state-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": [],
+        "fails_to_test": ["whether all dirty files are correct"]
+      }
+    },
+    "6": {
+      "class": "pass",
+      "probe": "node -v",
+      "evidence": "Node v26.0.0.",
+      "next_action": "Use Node 26 unless repo scripts expose incompatibility.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "shell",
+        "proof_id": "eid448-node-version-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": [],
+        "fails_to_test": ["pnpm version", "Next build"]
+      }
+    },
+    "7": {
+      "class": "pass",
+      "probe": "pnpm -v and npx --yes pnpm@11.1.3 -v compared with package.json engines",
+      "evidence": "Global pnpm is 9.14.4, but repo-pinned pnpm is available through npx --yes pnpm@11.1.3 and reports 11.1.3.",
+      "next_action": "Use npx --yes pnpm@11.1.3 for pnpm-gated repo commands until global pnpm/Corepack is repaired.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "package manager",
+        "proof_id": "eid448-pnpm-npx-path-20260614",
+        "external_dependencies": ["npm registry for npx pnpm package"],
+        "bypassed_controls": [],
+        "side_effects": ["downloaded pnpm 11.1.3 into npm/npx cache"],
+        "fails_to_test": ["full pnpm workspace install", "native package build"]
+      }
+    },
+    "8": {
+      "class": "pass",
+      "probe": "rustc --version && cargo --version",
+      "evidence": "rustc 1.95.0 and cargo 1.95.0 available.",
+      "next_action": "Use fresh CARGO_TARGET_DIR for repeatable Surfari test probes.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust toolchain",
+        "proof_id": "eid448-rust-version-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": [],
+        "fails_to_test": ["release binary build"]
+      }
+    },
+    "9": {
+      "class": "pass",
+      "probe": "package.json script inventory",
+      "evidence": "package.json declares build, release, dashboard, converge:eid448, converge:eid448:fixtures, and converge:eid448:linear-sync scripts.",
+      "next_action": "Keep converge scripts in package.json while direct Python remains the fallback when pnpm install is unavailable.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "package.json",
+        "proof_id": "eid448-package-script-inventory-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": [],
+        "fails_to_test": ["script execution through a fully installed pnpm workspace"]
+      }
+    },
+    "10": {
+      "class": "pass",
+      "probe": "CARGO_TARGET_DIR=/tmp/surfari-eid448-target cargo test --manifest-path cli/Cargo.toml surfari:: -- --nocapture",
+      "evidence": "Fresh-target Surfari test run completed: 24 passed, 0 failed, 812 filtered out.",
+      "next_action": "Use this fresh-target command as the M2 regression probe before browser fixture work.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust compile/test",
+        "proof_id": "eid448-surfari-cargo-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": ["compiled Rust test artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["release binary build", "browser daemon e2e flows"]
+      }
+    },
+    "11": {
+      "class": "pass",
+      "probe": "CARGO_TARGET_DIR=/tmp/surfari-eid448-target cargo build --release --manifest-path cli/Cargo.toml; /tmp/surfari-eid448-target/release/agent-browser --version",
+      "evidence": "Release build completed: Finished release profile in 4m59s. Built binary reports agent-browser 0.27.1.",
+      "next_action": "Copy or route the built binary only under an explicit wrapper-routing approval.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust release build and local binary",
+        "proof_id": "eid448-release-build-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": ["compiled release artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["global install", "wrapper routing", "browser daemon launch"]
+      }
+    },
+    "12": {
+      "class": "pass",
+      "probe": "surfari browser status --json",
+      "evidence": "ab_available=true at /Users/dshanklin/repos-eidos-agi/eidosagi.com/tools/agent-browser/ab; cerebro_available=false; installed agent-browser resolves to Hermes path.",
+      "next_action": "After native build, update wrapper routing only with explicit approval.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Surfari CLI wrapper status",
+        "proof_id": "eid448-wrapper-discovery-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": [],
+        "fails_to_test": ["wrapper routes to fork", "real browser session behavior"]
+      }
+    },
+    "13": {
+      "class": "pass",
+      "probe": "real Eidos ab wrapper routes through the approved local Surfari release binary",
+      "evidence": "After explicit approval, /Volumes/MacMiniStorage/Eidos/repos-eidos-agi/eidosagi.com/tools/agent-browser/ab reads .surfari-agent-browser-bin and `ab --version` reports agent-browser 0.27.1 from /tmp/surfari-eid448-target/release/agent-browser.",
+      "next_action": "Keep the pointer file reversible until Surfari has a durable install or package route.",
+      "owner": "none",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "real Eidos ab wrapper plus approved local Surfari release binary",
+        "proof_id": "eid448-real-wrapper-route-20260614",
+        "external_dependencies": ["local release binary"],
+        "bypassed_controls": ["published package and global install not used"],
+        "side_effects": ["modified eidosagi.com/tools/agent-browser/ab", "created eidosagi.com/tools/agent-browser/.surfari-agent-browser-bin"],
+        "fails_to_test": ["published package route", "durable install outside /tmp"]
+      }
+    },
+    "14": {
+      "class": "pass",
+      "probe": "isolated release-binary browser smoke with AGENT_BROWSER_SOCKET_DIR, AGENT_BROWSER_SESSION, SURFARI_ACTION_LOG_PATH, and --profile",
+      "evidence": "Built binary opened https://example.com in an isolated profile/session, returned rc=0, logged launch and navigate action_started/action_finished rows, captured active_tab_id t1 and active_url https://example.com/, then closed the isolated session.",
+      "next_action": "Keep global/wrapper routing approval-gated; use isolated release-binary smoke for local proof until wrapper routing is approved.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "built release binary plus local Chrome profile",
+        "proof_id": "eid448-direct-cli-browser-smoke-20260614",
+        "external_dependencies": ["example.com", "local Chrome or Chrome for Testing"],
+        "bypassed_controls": ["global install and wrapper routing not used"],
+        "side_effects": ["opened and closed an isolated local browser session", "wrote temporary Surfari action log rows"],
+        "fails_to_test": ["global installed CLI", "Eidos wrapper routes to fork"]
+      }
+    },
+    "15": {
+      "class": "pass",
+      "probe": "cargo test surfari::context",
+      "evidence": "Surfari context tests passed inside the 24-test fresh-target run, including structured context capture.",
+      "next_action": "Add daemon-level context propagation checks after fixture browser flows exist.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust unit tests",
+        "proof_id": "eid448-surfari-cargo-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": ["compiled Rust test artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["daemon session startup"]
+      }
+    },
+    "16": {
+      "class": "pass",
+      "probe": "cargo test surfari::context",
+      "evidence": "Expected-domain parser is covered by structured context capture test; URL inputs are sanitized to hostnames and unsafe entries are dropped.",
+      "next_action": "Add browser-level expected-domain evidence after fixture flows are wired to the daemon.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust unit tests",
+        "proof_id": "eid448-surfari-cargo-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": ["compiled Rust test artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["real browser active URL matching"]
+      }
+    },
+    "17": {
+      "class": "pass",
+      "probe": "cargo test surfari::context",
+      "evidence": "Context metadata capture test passed for context, org, account, profile, subject, Knox ref, expected domains, and browser profile summary.",
+      "next_action": "Verify daemon logs carry the same metadata during fake browser runs.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust unit tests",
+        "proof_id": "eid448-surfari-cargo-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": ["compiled Rust test artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["browser launch metadata propagation"]
+      }
+    },
+    "18": {
+      "class": "pass",
+      "probe": "cargo test surfari::context surfari::redaction",
+      "evidence": "Knox reference remains metadata only in context tests; redaction tests passed for fill values, cookies, headers, tokens, and storage values.",
+      "next_action": "Add seeded Knox-ref daemon log regression before real Apple dry run.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust unit tests",
+        "proof_id": "eid448-surfari-cargo-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": ["compiled Rust test artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["real Knox integration", "browser screenshots"]
+      }
+    },
+    "19": {
+      "class": "pass",
+      "probe": "CARGO_TARGET_DIR=/tmp/surfari-eid448-target cargo test --manifest-path cli/Cargo.toml surfari:: -- --nocapture",
+      "evidence": "Governance human-gate tests passed inside the 24-test fresh-target run, including Apple sign-in protected-action block and read-only allowance.",
+      "next_action": "Exercise the same decisions through a browser fixture before any real Apple run.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust unit test",
+        "proof_id": "eid448-surfari-cargo-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": ["compiled Rust test artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["browser daemon e2e flow"]
+      }
+    },
+    "20": {
+      "class": "pass",
+      "probe": "cargo test surfari::governance",
+      "evidence": "Read-only action on idmsa.apple.com is allowed while carrying human_gate=apple_sign_in metadata.",
+      "next_action": "Confirm the same behavior through fake Apple sign-in fixture snapshots.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust unit tests",
+        "proof_id": "eid448-surfari-cargo-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": ["compiled Rust test artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["real Apple browser surface"]
+      }
+    },
+    "21": {
+      "class": "pass",
+      "probe": "cargo test surfari::governance",
+      "evidence": "Protected fill action on idmsa.apple.com is blocked with reason human_gate_required.",
+      "next_action": "Confirm the same behavior through fake Apple sign-in fixture protected action.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust unit tests",
+        "proof_id": "eid448-surfari-cargo-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": ["compiled Rust test artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["browser mutation prevention"]
+      }
+    },
+    "22": {
+      "class": "pass",
+      "probe": "cargo test surfari::governance",
+      "evidence": "Expected-domain inclusion does not override human-gate blocking for idmsa.apple.com.",
+      "next_action": "Add regression row if a future domain allowlist bypasses human gates.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust unit tests",
+        "proof_id": "eid448-surfari-cargo-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": ["compiled Rust test artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["browser daemon e2e flow"]
+      }
+    },
+    "23": {
+      "class": "pass",
+      "probe": "cargo test surfari::governance",
+      "evidence": "Wrong-domain protected fill action is blocked with reason domain_mismatch.",
+      "next_action": "Carry this through active-tab drift fixture.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust unit tests",
+        "proof_id": "eid448-surfari-cargo-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": ["compiled Rust test artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["active browser tab switching"]
+      }
+    },
+    "24": {
+      "class": "pass",
+      "probe": "cargo test surfari::governance",
+      "evidence": "Partial context protected action is blocked with reason partial_context.",
+      "next_action": "Add daemon log assertion for partial-context fail-closed behavior.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust unit tests",
+        "proof_id": "eid448-surfari-cargo-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": ["compiled Rust test artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["daemon session startup"]
+      }
+    },
+    "25": {
+      "class": "pass",
+      "probe": "CARGO_TARGET_DIR=/tmp/surfari-eid448-target cargo test --manifest-path cli/Cargo.toml test_surfari_ -- --nocapture",
+      "evidence": "Action-log test created DaemonState with Surfari context and executed stream_status successfully through execute_command.",
+      "next_action": "Repeat with a real daemon process when fixture browser driving is added.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "Rust action tests",
+        "proof_id": "eid448-surfari-action-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": ["separate daemon process not launched"],
+        "side_effects": ["wrote temporary JSONL action logs in test tempdirs"],
+        "fails_to_test": ["real daemon socket lifecycle", "browser launch"]
+      }
+    },
+    "26": {
+      "class": "pass",
+      "probe": "CARGO_TARGET_DIR=/tmp/surfari-eid448-target cargo test --manifest-path cli/Cargo.toml test_surfari_ -- --nocapture",
+      "evidence": "Action-log tests assert browser_anchor.surfari_session_id and tab_count metadata in action_started/action_finished rows.",
+      "next_action": "Add active tab id and active URL assertions after fixture browser launch.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "Rust action tests",
+        "proof_id": "eid448-surfari-action-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": ["no live browser tabs"],
+        "side_effects": ["wrote temporary JSONL action logs in test tempdirs"],
+        "fails_to_test": ["active browser tab id", "active browser URL"]
+      }
+    },
+    "27": {
+      "class": "pass",
+      "probe": "CARGO_TARGET_DIR=/tmp/surfari-eid448-target cargo test --manifest-path cli/Cargo.toml test_surfari_ -- --nocapture",
+      "evidence": "stream_status read-only command is allowed with Surfari context and logs governance.reason=read_only_action.",
+      "next_action": "Repeat against fake browser page snapshot/open commands.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "Rust action tests",
+        "proof_id": "eid448-surfari-action-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": ["browser read-only command not exercised"],
+        "side_effects": ["wrote temporary JSONL action logs in test tempdirs"],
+        "fails_to_test": ["snapshot/url/title on live page"]
+      }
+    },
+    "28": {
+      "class": "pass",
+      "probe": "CARGO_TARGET_DIR=/tmp/surfari-eid448-target cargo test --manifest-path cli/Cargo.toml test_surfari_ -- --nocapture",
+      "evidence": "Wrong-domain protected fill action is blocked before browser launch; test asserts state.browser.is_none().",
+      "next_action": "Repeat with active-tab mismatch in a fixture browser session.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "Rust action tests",
+        "proof_id": "eid448-surfari-action-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": ["no live browser tabs"],
+        "side_effects": ["wrote temporary JSONL action logs in test tempdirs"],
+        "fails_to_test": ["protected action blocked after browser is already open"]
+      }
+    },
+    "29": {
+      "class": "pass",
+      "probe": "CARGO_TARGET_DIR=/tmp/surfari-eid448-target cargo test --manifest-path cli/Cargo.toml test_surfari_ -- --nocapture",
+      "evidence": "Action tests assert JSONL action_started/action_finished rows include Surfari context, browser anchor, governance decision/reason, use_id, and redacted command/result metadata.",
+      "next_action": "Carry the same metadata assertions through fake browser workflow runs.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "Rust action tests",
+        "proof_id": "eid448-surfari-action-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": ["browser workflow not exercised"],
+        "side_effects": ["wrote temporary JSONL action logs in test tempdirs"],
+        "fails_to_test": ["browser page action lifecycle"]
+      }
+    },
+    "30": {
+      "class": "pass",
+      "probe": "cargo test surfari::redaction",
+      "evidence": "Redaction tests passed for command values, cookies, headers, tokens, storage values, and response summaries.",
+      "next_action": "Add daemon JSONL seeded-secret assertion for full action logs.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust unit tests",
+        "proof_id": "eid448-surfari-cargo-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": ["compiled Rust test artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["full daemon action log write path"]
+      }
+    },
+    "31": {
+      "class": "pass",
+      "probe": "cargo test surfari::learning",
+      "evidence": "Learning candidate tests passed and record response shape, sanitized URL, screenshot path, and Surfari context without raw page text.",
+      "next_action": "Add repeat-run comparison after fixture browser flows exist.",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "Rust unit tests",
+        "proof_id": "eid448-surfari-cargo-tests-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": [],
+        "side_effects": ["compiled Rust test artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["multi-run improvement measurement"]
+      }
+    },
+    "32": {
+      "class": "pass",
+      "probe": "python3 scripts/probe-eid448-fake-workflows.py",
+      "evidence": "Local ThreadingHTTPServer fixture probe passed 7/7 scenarios and wrote docs/converge/eid-448/evidence/fake_workflow_probe.json.",
+      "next_action": "Drive the fixture with the Surfari daemon instead of urllib.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "local HTTP fixture server",
+        "proof_id": "eid448-fake-workflow-probe-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": ["browser automation not exercised"],
+        "side_effects": ["bound ephemeral localhost port"],
+        "fails_to_test": ["Chrome/daemon active-tab behavior"]
+      }
+    },
+    "33": {
+      "class": "pass",
+      "probe": "python3 scripts/probe-eid448-fake-workflows.py",
+      "evidence": "fake_apple_redirect scenario returned 302 with Location /appleauth/auth/signin and expected marker redirects-to-signin.",
+      "next_action": "Exercise redirect through agent-browser navigation and active-url capture.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "local HTTP fixture server",
+        "proof_id": "eid448-fake-workflow-probe-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": ["browser redirect handling not exercised"],
+        "side_effects": ["bound ephemeral localhost port"],
+        "fails_to_test": ["browser active URL after redirect"]
+      }
+    },
+    "34": {
+      "class": "pass",
+      "probe": "python3 scripts/probe-eid448-fake-workflows.py plus cargo test surfari::governance",
+      "evidence": "fake_apple_signin_gate scenario exposes human-gate marker; governance unit tests prove protected actions on idmsa.apple.com block with human_gate_required.",
+      "next_action": "Combine fixture and daemon command path so the browser action itself is blocked pre-mutation.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "local HTTP fixture server and Rust unit tests",
+        "proof_id": "eid448-fake-workflow-probe-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": ["daemon command path not exercised end-to-end"],
+        "side_effects": ["bound ephemeral localhost port", "compiled Rust test artifacts under /tmp/surfari-eid448-target"],
+        "fails_to_test": ["real browser protected action prevention"]
+      }
+    },
+    "35": {
+      "class": "pass",
+      "probe": "python3 scripts/probe-eid448-fake-workflows.py",
+      "evidence": "fake_profile_download_handoff scenario returned download-handoff:profile-metadata-only marker without profile contents.",
+      "next_action": "Add file-download handoff metadata assertion through daemon logs.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "local HTTP fixture server",
+        "proof_id": "eid448-fake-workflow-probe-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": ["actual browser download not exercised"],
+        "side_effects": ["bound ephemeral localhost port"],
+        "fails_to_test": ["Chrome download event handling"]
+      }
+    },
+    "36": {
+      "class": "pass",
+      "probe": "python3 scripts/probe-eid448-fake-workflows.py",
+      "evidence": "fake_stale_react_ref scenario returned stale-ref:rerendered marker.",
+      "next_action": "Drive this fixture with snapshot refs and assert stale-ref recovery.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "local HTTP fixture server",
+        "proof_id": "eid448-fake-workflow-probe-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": ["real DOM ref invalidation not exercised"],
+        "side_effects": ["bound ephemeral localhost port"],
+        "fails_to_test": ["stale ref detection in agent-browser"]
+      }
+    },
+    "37": {
+      "class": "pass",
+      "probe": "python3 scripts/probe-eid448-browser-fixtures.py",
+      "evidence": "Browser fixture probe snapshotted stale-ref page with @e2, replaced the button through local fixture DOM mutation, observed click @e2 fail with element-not-found, then recovered with click #recovered-action successfully.",
+      "next_action": "Promote this into a Rust or CLI integration test if stale-ref recovery becomes a core invariant.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "built release binary, local Chrome profile, local HTTP fixture",
+        "proof_id": "eid448-browser-fixture-probe-20260614",
+        "external_dependencies": ["local Chrome or Chrome for Testing"],
+        "bypassed_controls": ["DOM mutation was fixture-driven through eval"],
+        "side_effects": ["mutated local fixture DOM", "opened and closed isolated local browser sessions", "wrote temporary action and learning logs"],
+        "fails_to_test": ["real Apple React portal behavior"]
+      }
+    },
+    "38": {
+      "class": "pass",
+      "probe": "python3 scripts/probe-eid448-fake-workflows.py",
+      "evidence": "fake_active_tab_drift scenario returned active-tab-drift:wrong-surface marker.",
+      "next_action": "Add daemon/browser test that opens two tabs and blocks protected action on wrong active surface.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "local HTTP fixture server",
+        "proof_id": "eid448-fake-workflow-probe-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": ["multi-tab browser not exercised"],
+        "side_effects": ["bound ephemeral localhost port"],
+        "fails_to_test": ["actual tab focus drift"]
+      }
+    },
+    "39": {
+      "class": "pass",
+      "probe": "python3 scripts/probe-eid448-browser-fixtures.py",
+      "evidence": "Browser fixture probe launched a second isolated release-binary session with SURFARI_EXPECTED_DOMAINS=developer.apple.com, opened a local fake prompt-injection page read-only, then blocked protected fill on the wrong active surface with domain_mismatch.",
+      "next_action": "Add a true two-tab focus drift test; current proof covers wrong active surface blocking with one active local fixture tab.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "built release binary, local Chrome profile, local HTTP fixture",
+        "proof_id": "eid448-browser-fixture-probe-20260614",
+        "external_dependencies": ["local Chrome or Chrome for Testing"],
+        "bypassed_controls": ["true multi-tab drift not exercised"],
+        "side_effects": ["opened and closed isolated local browser sessions", "wrote temporary action and learning logs"],
+        "fails_to_test": ["actual tab focus steal across multiple tabs"]
+      }
+    },
+    "40": {
+      "class": "pass",
+      "probe": "python3 scripts/probe-eid448-fake-workflows.py",
+      "evidence": "fake_multi_account_saas scenario returned account-mismatch:visible marker.",
+      "next_action": "Add account metadata comparison through daemon context logs.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "local HTTP fixture server",
+        "proof_id": "eid448-fake-workflow-probe-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": ["browser profile/account cookies not exercised"],
+        "side_effects": ["bound ephemeral localhost port"],
+        "fails_to_test": ["real multi-account session detection"]
+      }
+    },
+    "41": {
+      "class": "pass",
+      "probe": "python3 scripts/probe-eid448-fake-workflows.py",
+      "evidence": "fake_prompt_injection scenario returned prompt-injection:untrusted-page-text marker.",
+      "next_action": "Add browser/agent test that refuses page-provided instruction text.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "local HTTP fixture server",
+        "proof_id": "eid448-fake-workflow-probe-20260614",
+        "external_dependencies": [],
+        "bypassed_controls": ["agent reasoning layer not exercised"],
+        "side_effects": ["bound ephemeral localhost port"],
+        "fails_to_test": ["model prompt-injection resistance"]
+      }
+    },
+    "42": {
+      "class": "pass",
+      "probe": "python3 scripts/probe-eid448-browser-fixtures.py",
+      "evidence": "Browser fixture probe ran repeated open/snapshot actions against local fake workflows and wrote 8 learning-candidate rows under an isolated HOME cache.",
+      "next_action": "Compare candidate quality across runs; current proof establishes repeat-run capture, not improvement scoring.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "built release binary, local Chrome profile, local HTTP fixture",
+        "proof_id": "eid448-browser-fixture-probe-20260614",
+        "external_dependencies": ["local Chrome or Chrome for Testing"],
+        "bypassed_controls": ["no model learning or repair selection evaluated"],
+        "side_effects": ["wrote temporary learning-candidates JSONL rows"],
+        "fails_to_test": ["measured improvement between runs"]
+      }
+    },
+    "43": {
+      "class": "pass",
+      "probe": "python3 scripts/probe-eid448-wrapper-fixture.py",
+      "evidence": "Temporary clone of the Eidos ab wrapper routed node_modules/.bin/agent-browser to the built Surfari binary, proved ab --version reports agent-browser 0.27.1, opened the fake prompt-injection workflow, snapshotted it, and wrote 8 Surfari action-log rows.",
+      "next_action": "After human approval, apply the same routing to the real Eidos wrapper path or install the Surfari fork package there.",
+      "owner": "human approval plus coding agent",
+      "proof_envelope": {
+        "environment": "local",
+        "surface": "temporary clone of Eidos wrapper and local fake workflow fixture",
+        "proof_id": "eid448-wrapper-fixture-probe-20260614",
+        "external_dependencies": ["local Chrome or Chrome for Testing"],
+        "bypassed_controls": ["real eidosagi.com wrapper was not mutated"],
+        "side_effects": ["created temporary wrapper clone under /tmp", "opened and closed isolated local browser session", "wrote temporary action logs"],
+        "fails_to_test": ["real wrapper path routes to fork", "persistent wrapper install"]
+      }
+    },
+    "44": {
+      "class": "pass",
+      "probe": "python3 scripts/probe-eid448-browser-fixtures.py plus release binary smoke",
+      "evidence": "Built release binary opened and snapshotted local fake workflow pages, wrote 26 action-log rows, wrote 8 learning-candidate rows, blocked wrong-surface protected fill, and redacted the seeded fake secret.",
+      "next_action": "Package/copy the binary only after wrapper routing approval; current proof uses /tmp/surfari-eid448-target/release/agent-browser directly.",
+      "proof_envelope": {
+        "environment": "local controlled harness",
+        "surface": "built release binary, local Chrome profile, local HTTP fixture",
+        "proof_id": "eid448-browser-fixture-probe-20260614",
+        "external_dependencies": ["local Chrome or Chrome for Testing"],
+        "bypassed_controls": ["wrapper routing not used", "global install not used", "real Apple not used"],
+        "side_effects": ["opened and closed isolated local browser sessions", "wrote temporary action and learning logs"],
+        "fails_to_test": ["Eidos wrapper path", "published package", "real Apple account surface"]
+      }
+    },
+    "45": {
+      "class": "pass",
+      "probe": "real Knox profile-session dry run through the approved wrapper route",
+      "evidence": "docs/converge/eid-448/evidence/apple_dry_run_probe.json shows the real Eidos ab wrapper opened https://developer.apple.com/account/resources/profiles/list from an isolated profile and landed on sanitized URL https://idmsa.apple.com/IDMSWebAuth/signin.",
+      "next_action": "Keep future Apple runs metadata-only until a human explicitly approves account/team confirmation or profile handoff.",
+      "owner": "none",
+      "proof_envelope": {
+        "environment": "local plus real Apple web surfaces",
+        "surface": "real Eidos ab wrapper, developer.apple.com redirect, idmsa.apple.com sign-in gate",
+        "proof_id": "eid448-apple-dry-run-probe-20260614",
+        "external_dependencies": ["Apple Developer web surface", "local wrapper routing"],
+        "bypassed_controls": ["existing logged-in Apple session not used", "profile download not attempted"],
+        "side_effects": ["opened and closed isolated browser session sfa16497", "wrote sanitized Apple dry-run evidence"],
+        "fails_to_test": ["Apple login completion", "team selection", "profile download handoff"]
+      }
+    },
+    "46": {
+      "class": "pass",
+      "probe": "real Apple read-only surface dry run",
+      "evidence": "Apple dry-run checks passed: wrapper_routes_to_surfari=true, open_command_completed=true, current_domain_allowed=true, no_protected_action_attempted=true, and no_forbidden_secret_terms_in_log=true.",
+      "next_action": "Promote the metadata-only read-only probe into the standard Surfari account-sensitive preflight.",
+      "owner": "none",
+      "proof_envelope": {
+        "environment": "real Apple web surface",
+        "surface": "developer.apple.com and idmsa.apple.com through real wrapper",
+        "proof_id": "eid448-apple-dry-run-probe-20260614",
+        "external_dependencies": ["Apple Developer web surface", "human approval packet"],
+        "bypassed_controls": ["snapshot/fill/click/download commands intentionally not used"],
+        "side_effects": ["read-only browser navigation only", "isolated profile path under /tmp"],
+        "fails_to_test": ["post-login Apple Developer pages", "download/install behavior"]
+      }
+    },
+    "47": {
+      "class": "pass",
+      "probe": "real Apple sign-in gate stop",
+      "evidence": "Apple dry run observed current_domain=idmsa.apple.com and human_gate_observed=true, then closed the isolated session before password entry, MFA/OTP, passkey approval, legal agreement, payment, profile download, profile install, or final submission.",
+      "next_action": "Keep idmsa.apple.com as a hard human gate for protected actions.",
+      "owner": "none",
+      "proof_envelope": {
+        "environment": "real Apple web surface",
+        "surface": "idmsa.apple.com",
+        "proof_id": "eid448-apple-dry-run-probe-20260614",
+        "external_dependencies": ["Apple Account human login state"],
+        "bypassed_controls": ["no credential, MFA, passkey, legal, payment, or download action attempted"],
+        "side_effects": ["closed isolated browser session before human-authenticated action"],
+        "fails_to_test": ["successful human login", "post-login gate behavior"]
+      }
+    },
+    "48": {
+      "class": "blocked",
+      "probe": "human account-team confirmation",
+      "evidence": "Blocked until human confirms the intended Apple account/team during an approved dry run; expected Team ID remains LJWV44N8BF.",
+      "next_action": "Capture metadata-only human confirmation that the visible team matches LJWV44N8BF without storing credentials or secrets.",
+      "owner": "human operator",
+      "proof_envelope": {
+        "environment": "real Apple web surface",
+        "surface": "developer.apple.com",
+        "proof_id": "eid448-real-apple-team-confirm-blocked-20260614",
+        "external_dependencies": ["Apple Developer account access"],
+        "bypassed_controls": [],
+        "side_effects": [],
+        "fails_to_test": ["real account/team confirmation"]
+      }
+    },
+    "49": {
+      "class": "blocked",
+      "probe": "profile install approval gate",
+      "evidence": "Blocked by profile download/install approval boundary; no provisioning profile download or install was attempted.",
+      "next_action": "After human approval, record only handoff metadata for profile download/install; never store provisioning profile contents.",
+      "owner": "human operator",
+      "proof_envelope": {
+        "environment": "real Apple web surface plus local Xcode signing state",
+        "surface": "developer.apple.com and local profile install path",
+        "proof_id": "eid448-profile-install-approval-blocked-20260614",
+        "external_dependencies": ["Apple Developer session", "human profile install approval"],
+        "bypassed_controls": [],
+        "side_effects": [],
+        "fails_to_test": ["real profile download handoff", "local profile install"]
+      }
+    },
+    "50": {
+      "class": "blocked",
+      "probe": "final proof merge review",
+      "evidence": "Blocked until M1-M4 are green or explicitly owned and the real Apple dry run has approved metadata-only evidence.",
+      "next_action": "Review generated Converge rows, action logs, approval packet, and Linear proof after the approved dry run.",
+      "owner": "human approval plus coding agent",
+      "proof_envelope": {
+        "environment": "local plus real Apple web surface",
+        "surface": "Converge artifacts, Linear, Surfari binary, Apple Developer metadata",
+        "proof_id": "eid448-final-proof-review-blocked-20260614",
+        "external_dependencies": ["approved real dry run"],
+        "bypassed_controls": [],
+        "side_effects": [],
+        "fails_to_test": ["final merge/release decision"]
+      }
+    }
+  }
+}

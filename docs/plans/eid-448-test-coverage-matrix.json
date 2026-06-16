@@ -1,0 +1,1520 @@
+{
+  "title": "Surfari Knox Test Coverage Matrix",
+  "subtitle": "EID-448 planned proof ladder for governed browser workflows",
+  "schema_version": 2,
+  "matrix_shape": "50x50",
+  "depth_levels": {
+    "1": "observed or configured",
+    "2": "exercised by command or fixture",
+    "3": "asserted by automated check",
+    "4": "critical human or safety gate asserted"
+  },
+  "capabilities": [
+    {
+      "code": "A",
+      "label": "Repo path verified",
+      "group": "Repo"
+    },
+    {
+      "code": "B",
+      "label": "Origin and upstream verified",
+      "group": "Repo"
+    },
+    {
+      "code": "C",
+      "label": "Branch and HEAD verified",
+      "group": "Repo"
+    },
+    {
+      "code": "D",
+      "label": "Upstream freshness known",
+      "group": "Repo"
+    },
+    {
+      "code": "E",
+      "label": "Dirty state classified",
+      "group": "Repo"
+    },
+    {
+      "code": "F",
+      "label": "Node version verified",
+      "group": "Build"
+    },
+    {
+      "code": "G",
+      "label": "pnpm or Corepack ready",
+      "group": "Build"
+    },
+    {
+      "code": "H",
+      "label": "Rust and Cargo verified",
+      "group": "Build"
+    },
+    {
+      "code": "I",
+      "label": "Native compile or tests pass",
+      "group": "Build"
+    },
+    {
+      "code": "J",
+      "label": "Release binary built",
+      "group": "Build"
+    },
+    {
+      "code": "K",
+      "label": "Package scripts verified",
+      "group": "Install"
+    },
+    {
+      "code": "L",
+      "label": "Wrapper path found",
+      "group": "Install"
+    },
+    {
+      "code": "M",
+      "label": "Wrapper routes to fork",
+      "group": "Install"
+    },
+    {
+      "code": "N",
+      "label": "Installed CLI resolves to fork",
+      "group": "Install"
+    },
+    {
+      "code": "O",
+      "label": "Surfari context env captured",
+      "group": "Context"
+    },
+    {
+      "code": "P",
+      "label": "Expected domains parsed",
+      "group": "Context"
+    },
+    {
+      "code": "Q",
+      "label": "Account profile session metadata captured",
+      "group": "Context"
+    },
+    {
+      "code": "R",
+      "label": "Knox ref metadata only",
+      "group": "Context"
+    },
+    {
+      "code": "S",
+      "label": "Daemon session starts",
+      "group": "Browser Surface"
+    },
+    {
+      "code": "T",
+      "label": "Active tab id captured",
+      "group": "Browser Surface"
+    },
+    {
+      "code": "U",
+      "label": "Active URL and domain observed",
+      "group": "Browser Surface"
+    },
+    {
+      "code": "V",
+      "label": "Tab count and surface list observed",
+      "group": "Browser Surface"
+    },
+    {
+      "code": "W",
+      "label": "Browser profile session anchored",
+      "group": "Browser Surface"
+    },
+    {
+      "code": "X",
+      "label": "Human-gate domain classified",
+      "group": "Governance",
+      "critical": true
+    },
+    {
+      "code": "Y",
+      "label": "Read-only action allowed",
+      "group": "Governance"
+    },
+    {
+      "code": "Z",
+      "label": "Protected action attempted",
+      "group": "Governance"
+    },
+    {
+      "code": "AA",
+      "label": "Protected action blocked pre-mutation",
+      "group": "Governance"
+    },
+    {
+      "code": "AB",
+      "label": "Wrong-domain mismatch detected",
+      "group": "Governance"
+    },
+    {
+      "code": "AC",
+      "label": "Partial context fails closed",
+      "group": "Governance"
+    },
+    {
+      "code": "AD",
+      "label": "Sign-in surface detected",
+      "group": "Governance",
+      "critical": true
+    },
+    {
+      "code": "AE",
+      "label": "Stale ref detected",
+      "group": "Recovery"
+    },
+    {
+      "code": "AF",
+      "label": "DOM-confirmed recovery used",
+      "group": "Recovery"
+    },
+    {
+      "code": "AG",
+      "label": "Active-tab drift simulated",
+      "group": "Recovery"
+    },
+    {
+      "code": "AH",
+      "label": "Wrong active surface blocked",
+      "group": "Recovery"
+    },
+    {
+      "code": "AI",
+      "label": "Redirect observed",
+      "group": "Fixtures"
+    },
+    {
+      "code": "AJ",
+      "label": "Download handoff modeled",
+      "group": "Fixtures"
+    },
+    {
+      "code": "AK",
+      "label": "Profile state reported",
+      "group": "Fixtures"
+    },
+    {
+      "code": "AL",
+      "label": "Decision logged",
+      "group": "Logs"
+    },
+    {
+      "code": "AM",
+      "label": "Lifecycle log written",
+      "group": "Logs"
+    },
+    {
+      "code": "AN",
+      "label": "Redaction no secrets proven",
+      "group": "Logs"
+    },
+    {
+      "code": "AO",
+      "label": "Learning candidate safe",
+      "group": "Logs"
+    },
+    {
+      "code": "AP",
+      "label": "Fixture server running",
+      "group": "Fixtures"
+    },
+    {
+      "code": "AQ",
+      "label": "Fake Apple flow covered",
+      "group": "Fixtures"
+    },
+    {
+      "code": "AR",
+      "label": "Fake SaaS multi-account covered",
+      "group": "Fixtures"
+    },
+    {
+      "code": "AS",
+      "label": "Prompt injection resisted",
+      "group": "Fixtures"
+    },
+    {
+      "code": "AT",
+      "label": "Repeat-run improvement measured",
+      "group": "Learning"
+    },
+    {
+      "code": "AU",
+      "label": "Real Apple read-only observed",
+      "group": "Real Workflow"
+    },
+    {
+      "code": "AV",
+      "label": "Real human gate respected",
+      "group": "Real Workflow",
+      "critical": true
+    },
+    {
+      "code": "AW",
+      "label": "Human confirms account and team",
+      "group": "Real Workflow",
+      "critical": true
+    },
+    {
+      "code": "AX",
+      "label": "Linear proof or merge decision",
+      "group": "Real Workflow"
+    }
+  ],
+  "tests": [
+    {
+      "id": 1,
+      "name": "Repo path check",
+      "group": "Repo and Build",
+      "coverage": {
+        "A": 3
+      },
+      "capabilities": [
+        "A"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Remote check",
+      "group": "Repo and Build",
+      "coverage": {
+        "A": 1,
+        "B": 3
+      },
+      "capabilities": [
+        "A",
+        "B"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Branch and HEAD check",
+      "group": "Repo and Build",
+      "coverage": {
+        "A": 1,
+        "B": 1,
+        "C": 3
+      },
+      "capabilities": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Upstream freshness check",
+      "group": "Repo and Build",
+      "coverage": {
+        "A": 1,
+        "B": 2,
+        "C": 1,
+        "D": 3
+      },
+      "capabilities": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Dirty-state classification",
+      "group": "Repo and Build",
+      "coverage": {
+        "A": 1,
+        "B": 1,
+        "C": 1,
+        "D": 1,
+        "E": 3
+      },
+      "capabilities": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Node version check",
+      "group": "Repo and Build",
+      "coverage": {
+        "F": 3
+      },
+      "capabilities": [
+        "F"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "pnpm Corepack check",
+      "group": "Repo and Build",
+      "coverage": {
+        "F": 1,
+        "G": 3,
+        "K": 1
+      },
+      "capabilities": [
+        "F",
+        "G",
+        "K"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Rust toolchain check",
+      "group": "Repo and Build",
+      "coverage": {
+        "H": 3
+      },
+      "capabilities": [
+        "H"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Package script inventory",
+      "group": "Repo and Build",
+      "coverage": {
+        "F": 1,
+        "G": 1,
+        "K": 3
+      },
+      "capabilities": [
+        "F",
+        "G",
+        "K"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Rust compile check",
+      "group": "Repo and Build",
+      "coverage": {
+        "H": 1,
+        "I": 3
+      },
+      "capabilities": [
+        "H",
+        "I"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Native binary build",
+      "group": "Repo and Build",
+      "coverage": {
+        "F": 1,
+        "G": 2,
+        "H": 2,
+        "I": 2,
+        "J": 3,
+        "K": 2
+      },
+      "capabilities": [
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Wrapper discovery",
+      "group": "Repo and Build",
+      "coverage": {
+        "L": 3,
+        "N": 1
+      },
+      "capabilities": [
+        "L",
+        "N"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Wrapper routes to fork",
+      "group": "Repo and Build",
+      "coverage": {
+        "J": 2,
+        "L": 2,
+        "M": 3,
+        "N": 3
+      },
+      "capabilities": [
+        "J",
+        "L",
+        "M",
+        "N"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Installed CLI smoke",
+      "group": "Repo and Build",
+      "coverage": {
+        "J": 1,
+        "L": 1,
+        "M": 2,
+        "N": 3,
+        "S": 1
+      },
+      "capabilities": [
+        "J",
+        "L",
+        "M",
+        "N",
+        "S"
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Context env capture unit",
+      "group": "Governance Logic",
+      "coverage": {
+        "O": 3,
+        "Q": 2,
+        "R": 2
+      },
+      "capabilities": [
+        "O",
+        "Q",
+        "R"
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Expected-domain parser unit",
+      "group": "Governance Logic",
+      "coverage": {
+        "O": 1,
+        "P": 3
+      },
+      "capabilities": [
+        "O",
+        "P"
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Context metadata capture",
+      "group": "Governance Logic",
+      "coverage": {
+        "O": 3,
+        "P": 2,
+        "Q": 3,
+        "R": 2
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "Q",
+        "R"
+      ]
+    },
+    {
+      "id": 18,
+      "name": "Knox ref metadata boundary",
+      "group": "Governance Logic",
+      "coverage": {
+        "O": 2,
+        "Q": 1,
+        "R": 3,
+        "AN": 2
+      },
+      "capabilities": [
+        "O",
+        "Q",
+        "R",
+        "AN"
+      ]
+    },
+    {
+      "id": 19,
+      "name": "Human-gate classifier unit",
+      "group": "Governance Logic",
+      "coverage": {
+        "X": 3,
+        "AD": 2
+      },
+      "capabilities": [
+        "X",
+        "AD"
+      ]
+    },
+    {
+      "id": 20,
+      "name": "Read-only human-gate decision",
+      "group": "Governance Logic",
+      "coverage": {
+        "P": 2,
+        "X": 3,
+        "Y": 3,
+        "AD": 2
+      },
+      "capabilities": [
+        "P",
+        "X",
+        "Y",
+        "AD"
+      ]
+    },
+    {
+      "id": 21,
+      "name": "Protected human-gate block",
+      "group": "Governance Logic",
+      "coverage": {
+        "P": 2,
+        "X": 3,
+        "Z": 2,
+        "AA": 3,
+        "AD": 3
+      },
+      "capabilities": [
+        "P",
+        "X",
+        "Z",
+        "AA",
+        "AD"
+      ]
+    },
+    {
+      "id": 22,
+      "name": "Expected domain still blocks",
+      "group": "Governance Logic",
+      "coverage": {
+        "O": 1,
+        "P": 3,
+        "X": 3,
+        "Z": 2,
+        "AA": 3,
+        "AD": 3
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "X",
+        "Z",
+        "AA",
+        "AD"
+      ]
+    },
+    {
+      "id": 23,
+      "name": "Wrong-domain block",
+      "group": "Governance Logic",
+      "coverage": {
+        "P": 2,
+        "U": 2,
+        "Z": 2,
+        "AA": 3,
+        "AB": 3
+      },
+      "capabilities": [
+        "P",
+        "U",
+        "Z",
+        "AA",
+        "AB"
+      ]
+    },
+    {
+      "id": 24,
+      "name": "Partial-context block",
+      "group": "Governance Logic",
+      "coverage": {
+        "O": 2,
+        "Z": 2,
+        "AA": 3,
+        "AC": 3
+      },
+      "capabilities": [
+        "O",
+        "Z",
+        "AA",
+        "AC"
+      ]
+    },
+    {
+      "id": 25,
+      "name": "Daemon starts with context",
+      "group": "Daemon and Logs",
+      "coverage": {
+        "O": 2,
+        "Q": 1,
+        "S": 3
+      },
+      "capabilities": [
+        "O",
+        "Q",
+        "S"
+      ]
+    },
+    {
+      "id": 26,
+      "name": "Daemon anchor capture",
+      "group": "Daemon and Logs",
+      "coverage": {
+        "O": 1,
+        "S": 2,
+        "T": 3,
+        "U": 3,
+        "V": 2,
+        "W": 2
+      },
+      "capabilities": [
+        "O",
+        "S",
+        "T",
+        "U",
+        "V",
+        "W"
+      ]
+    },
+    {
+      "id": 27,
+      "name": "Daemon read-only pass",
+      "group": "Daemon and Logs",
+      "coverage": {
+        "O": 2,
+        "P": 2,
+        "S": 2,
+        "T": 1,
+        "U": 2,
+        "Y": 3
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "S",
+        "T",
+        "U",
+        "Y"
+      ]
+    },
+    {
+      "id": 28,
+      "name": "Daemon prelaunch block",
+      "group": "Daemon and Logs",
+      "coverage": {
+        "O": 2,
+        "P": 2,
+        "S": 2,
+        "X": 3,
+        "Z": 2,
+        "AA": 3,
+        "AD": 2
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "S",
+        "X",
+        "Z",
+        "AA",
+        "AD"
+      ]
+    },
+    {
+      "id": 29,
+      "name": "Governance log metadata",
+      "group": "Daemon and Logs",
+      "coverage": {
+        "O": 2,
+        "P": 2,
+        "S": 2,
+        "X": 3,
+        "Z": 2,
+        "AA": 3,
+        "AD": 3,
+        "AL": 3,
+        "AM": 3
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "S",
+        "X",
+        "Z",
+        "AA",
+        "AD",
+        "AL",
+        "AM"
+      ]
+    },
+    {
+      "id": 30,
+      "name": "Redaction seeded secret",
+      "group": "Daemon and Logs",
+      "coverage": {
+        "O": 2,
+        "R": 2,
+        "S": 2,
+        "Z": 2,
+        "AA": 2,
+        "AM": 3,
+        "AN": 3
+      },
+      "capabilities": [
+        "O",
+        "R",
+        "S",
+        "Z",
+        "AA",
+        "AM",
+        "AN"
+      ]
+    },
+    {
+      "id": 31,
+      "name": "Learning candidate safe shape",
+      "group": "Daemon and Logs",
+      "coverage": {
+        "O": 2,
+        "S": 2,
+        "T": 2,
+        "U": 2,
+        "AM": 2,
+        "AN": 3,
+        "AO": 3
+      },
+      "capabilities": [
+        "O",
+        "S",
+        "T",
+        "U",
+        "AM",
+        "AN",
+        "AO"
+      ]
+    },
+    {
+      "id": 32,
+      "name": "Fixture server boot",
+      "group": "Fake Browser Workflows",
+      "coverage": {
+        "AP": 3
+      },
+      "capabilities": [
+        "AP"
+      ]
+    },
+    {
+      "id": 33,
+      "name": "Local fake Apple redirect",
+      "group": "Fake Browser Workflows",
+      "coverage": {
+        "O": 1,
+        "P": 2,
+        "S": 2,
+        "T": 2,
+        "U": 3,
+        "AI": 3,
+        "AP": 2,
+        "AQ": 3
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "S",
+        "T",
+        "U",
+        "AI",
+        "AP",
+        "AQ"
+      ]
+    },
+    {
+      "id": 34,
+      "name": "Sign-in redirect then block",
+      "group": "Fake Browser Workflows",
+      "coverage": {
+        "O": 2,
+        "P": 2,
+        "S": 2,
+        "T": 2,
+        "U": 3,
+        "X": 3,
+        "Z": 2,
+        "AA": 3,
+        "AD": 3,
+        "AI": 3,
+        "AP": 2,
+        "AQ": 3
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "S",
+        "T",
+        "U",
+        "X",
+        "Z",
+        "AA",
+        "AD",
+        "AI",
+        "AP",
+        "AQ"
+      ]
+    },
+    {
+      "id": 35,
+      "name": "Fake download handoff",
+      "group": "Fake Browser Workflows",
+      "coverage": {
+        "O": 2,
+        "P": 2,
+        "S": 2,
+        "T": 2,
+        "U": 2,
+        "Y": 1,
+        "AJ": 3,
+        "AK": 3,
+        "AP": 2,
+        "AQ": 2
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "S",
+        "T",
+        "U",
+        "Y",
+        "AJ",
+        "AK",
+        "AP",
+        "AQ"
+      ]
+    },
+    {
+      "id": 36,
+      "name": "Stale React ref fixture",
+      "group": "Fake Browser Workflows",
+      "coverage": {
+        "O": 1,
+        "S": 2,
+        "T": 2,
+        "Y": 3,
+        "AE": 3,
+        "AF": 2,
+        "AP": 2
+      },
+      "capabilities": [
+        "O",
+        "S",
+        "T",
+        "Y",
+        "AE",
+        "AF",
+        "AP"
+      ]
+    },
+    {
+      "id": 37,
+      "name": "Stale ref recovery",
+      "group": "Fake Browser Workflows",
+      "coverage": {
+        "O": 2,
+        "P": 1,
+        "S": 2,
+        "T": 2,
+        "U": 2,
+        "Z": 2,
+        "AA": 2,
+        "AE": 3,
+        "AF": 3,
+        "AP": 2
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "S",
+        "T",
+        "U",
+        "Z",
+        "AA",
+        "AE",
+        "AF",
+        "AP"
+      ]
+    },
+    {
+      "id": 38,
+      "name": "Active-tab drift fixture",
+      "group": "Fake Browser Workflows",
+      "coverage": {
+        "O": 2,
+        "P": 2,
+        "S": 2,
+        "T": 3,
+        "U": 2,
+        "V": 2,
+        "AG": 3,
+        "AP": 2
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "S",
+        "T",
+        "U",
+        "V",
+        "AG",
+        "AP"
+      ]
+    },
+    {
+      "id": 39,
+      "name": "Drift wrong-surface block",
+      "group": "Fake Browser Workflows",
+      "coverage": {
+        "O": 2,
+        "P": 2,
+        "S": 2,
+        "T": 3,
+        "U": 3,
+        "V": 2,
+        "Z": 2,
+        "AA": 3,
+        "AB": 3,
+        "AG": 3,
+        "AH": 3,
+        "AP": 2
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "S",
+        "T",
+        "U",
+        "V",
+        "Z",
+        "AA",
+        "AB",
+        "AG",
+        "AH",
+        "AP"
+      ]
+    },
+    {
+      "id": 40,
+      "name": "Fake multi-account SaaS",
+      "group": "Fake Browser Workflows",
+      "coverage": {
+        "O": 2,
+        "Q": 3,
+        "S": 2,
+        "T": 2,
+        "U": 2,
+        "W": 2,
+        "AB": 2,
+        "AR": 3,
+        "AP": 2
+      },
+      "capabilities": [
+        "O",
+        "Q",
+        "S",
+        "T",
+        "U",
+        "W",
+        "AB",
+        "AP",
+        "AR"
+      ]
+    },
+    {
+      "id": 41,
+      "name": "Prompt injection fixture",
+      "group": "Fake Browser Workflows",
+      "coverage": {
+        "O": 2,
+        "P": 2,
+        "S": 2,
+        "Y": 1,
+        "AA": 2,
+        "AN": 2,
+        "AS": 3,
+        "AP": 2
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "S",
+        "Y",
+        "AA",
+        "AN",
+        "AP",
+        "AS"
+      ]
+    },
+    {
+      "id": 42,
+      "name": "Repeat-run learning compare",
+      "group": "Fake Browser Workflows",
+      "coverage": {
+        "O": 2,
+        "S": 2,
+        "T": 2,
+        "U": 2,
+        "AM": 2,
+        "AN": 2,
+        "AO": 3,
+        "AT": 3,
+        "AP": 2
+      },
+      "capabilities": [
+        "O",
+        "S",
+        "T",
+        "U",
+        "AM",
+        "AN",
+        "AO",
+        "AP",
+        "AT"
+      ]
+    },
+    {
+      "id": 43,
+      "name": "Wrapper plus fake flow smoke",
+      "group": "Fake Browser Workflows",
+      "coverage": {
+        "J": 2,
+        "L": 2,
+        "M": 3,
+        "N": 3,
+        "O": 2,
+        "S": 2,
+        "T": 2,
+        "U": 2,
+        "AI": 2,
+        "AQ": 2,
+        "AP": 2
+      },
+      "capabilities": [
+        "J",
+        "L",
+        "M",
+        "N",
+        "O",
+        "S",
+        "T",
+        "U",
+        "AI",
+        "AP",
+        "AQ"
+      ]
+    },
+    {
+      "id": 44,
+      "name": "Built binary matrix smoke",
+      "group": "Fake Browser Workflows",
+      "coverage": {
+        "A": 1,
+        "B": 1,
+        "C": 1,
+        "D": 1,
+        "E": 1,
+        "F": 2,
+        "G": 2,
+        "H": 2,
+        "I": 3,
+        "J": 3,
+        "K": 2,
+        "L": 2,
+        "M": 2,
+        "N": 2,
+        "O": 2,
+        "P": 2,
+        "S": 2,
+        "AM": 2,
+        "AN": 2
+      },
+      "capabilities": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "S",
+        "AM",
+        "AN"
+      ]
+    },
+    {
+      "id": 45,
+      "name": "Knox profile-session dry run",
+      "group": "Real Knox Apple Dry Runs",
+      "coverage": {
+        "A": 1,
+        "B": 1,
+        "C": 1,
+        "D": 1,
+        "E": 1,
+        "F": 1,
+        "G": 2,
+        "H": 2,
+        "I": 3,
+        "J": 3,
+        "K": 2,
+        "L": 2,
+        "M": 2,
+        "N": 2,
+        "O": 3,
+        "P": 3,
+        "Q": 3,
+        "R": 3,
+        "S": 2,
+        "T": 2,
+        "U": 2,
+        "W": 2,
+        "X": 3,
+        "Y": 2,
+        "Z": 2,
+        "AA": 3,
+        "AD": 3,
+        "AJ": 2,
+        "AK": 3,
+        "AL": 2,
+        "AM": 2,
+        "AN": 3,
+        "AV": 4
+      },
+      "capabilities": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "W",
+        "X",
+        "Y",
+        "Z",
+        "AA",
+        "AD",
+        "AJ",
+        "AK",
+        "AL",
+        "AM",
+        "AN",
+        "AV"
+      ]
+    },
+    {
+      "id": 46,
+      "name": "Real Apple read-only surface",
+      "group": "Real Knox Apple Dry Runs",
+      "coverage": {
+        "A": 1,
+        "C": 1,
+        "J": 2,
+        "L": 2,
+        "M": 2,
+        "N": 2,
+        "O": 3,
+        "P": 3,
+        "Q": 3,
+        "R": 3,
+        "S": 2,
+        "T": 3,
+        "U": 3,
+        "V": 2,
+        "W": 3,
+        "X": 2,
+        "Y": 3,
+        "AD": 2,
+        "AU": 3,
+        "AV": 4
+      },
+      "capabilities": [
+        "A",
+        "C",
+        "J",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "V",
+        "W",
+        "X",
+        "Y",
+        "AD",
+        "AU",
+        "AV"
+      ]
+    },
+    {
+      "id": 47,
+      "name": "Real Apple sign-in gate stop",
+      "group": "Real Knox Apple Dry Runs",
+      "coverage": {
+        "O": 3,
+        "P": 3,
+        "Q": 3,
+        "R": 3,
+        "S": 2,
+        "T": 3,
+        "U": 3,
+        "W": 3,
+        "X": 3,
+        "Y": 2,
+        "Z": 2,
+        "AA": 4,
+        "AD": 4,
+        "AL": 3,
+        "AM": 3,
+        "AN": 3,
+        "AU": 2,
+        "AV": 4
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "W",
+        "X",
+        "Y",
+        "Z",
+        "AA",
+        "AD",
+        "AL",
+        "AM",
+        "AN",
+        "AU",
+        "AV"
+      ]
+    },
+    {
+      "id": 48,
+      "name": "Human account-team confirm",
+      "group": "Real Knox Apple Dry Runs",
+      "coverage": {
+        "O": 2,
+        "P": 2,
+        "Q": 3,
+        "R": 2,
+        "S": 2,
+        "T": 3,
+        "U": 3,
+        "W": 3,
+        "X": 2,
+        "Y": 3,
+        "AD": 3,
+        "AU": 3,
+        "AV": 4,
+        "AW": 4
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "W",
+        "X",
+        "Y",
+        "AD",
+        "AU",
+        "AV",
+        "AW"
+      ]
+    },
+    {
+      "id": 49,
+      "name": "Profile install approval gate",
+      "group": "Real Knox Apple Dry Runs",
+      "coverage": {
+        "O": 2,
+        "P": 2,
+        "Q": 3,
+        "R": 3,
+        "S": 2,
+        "T": 2,
+        "U": 2,
+        "AJ": 3,
+        "AK": 3,
+        "AL": 2,
+        "AM": 2,
+        "AN": 3,
+        "AU": 2,
+        "AV": 4,
+        "AW": 4
+      },
+      "capabilities": [
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "AJ",
+        "AK",
+        "AL",
+        "AM",
+        "AN",
+        "AU",
+        "AV",
+        "AW"
+      ]
+    },
+    {
+      "id": 50,
+      "name": "Final proof merge review",
+      "group": "Real Knox Apple Dry Runs",
+      "coverage": {
+        "A": 3,
+        "B": 3,
+        "C": 3,
+        "D": 3,
+        "E": 3,
+        "F": 3,
+        "G": 3,
+        "H": 3,
+        "I": 3,
+        "J": 3,
+        "K": 3,
+        "L": 3,
+        "M": 3,
+        "N": 3,
+        "O": 3,
+        "P": 3,
+        "Q": 3,
+        "R": 3,
+        "S": 2,
+        "T": 2,
+        "U": 2,
+        "V": 2,
+        "W": 2,
+        "X": 3,
+        "Y": 3,
+        "Z": 3,
+        "AA": 3,
+        "AB": 3,
+        "AC": 3,
+        "AD": 3,
+        "AE": 2,
+        "AF": 2,
+        "AG": 2,
+        "AH": 2,
+        "AI": 2,
+        "AJ": 2,
+        "AK": 3,
+        "AL": 3,
+        "AM": 3,
+        "AN": 3,
+        "AO": 3,
+        "AP": 2,
+        "AQ": 2,
+        "AR": 2,
+        "AS": 2,
+        "AT": 2,
+        "AU": 2,
+        "AV": 4,
+        "AW": 4,
+        "AX": 4
+      },
+      "capabilities": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "V",
+        "W",
+        "X",
+        "Y",
+        "Z",
+        "AA",
+        "AB",
+        "AC",
+        "AD",
+        "AE",
+        "AF",
+        "AG",
+        "AH",
+        "AI",
+        "AJ",
+        "AK",
+        "AL",
+        "AM",
+        "AN",
+        "AO",
+        "AP",
+        "AQ",
+        "AR",
+        "AS",
+        "AT",
+        "AU",
+        "AV",
+        "AW",
+        "AX"
+      ]
+    }
+  ]
+}

@@ -211,6 +211,28 @@ export AGENT_BROWSER_MAX_OUTPUT=50000
 
 Affected output types: `snapshot`, `get text`, `get html`, `eval`, `console`.
 
+## Surfari Learning Logs
+
+This fork records redacted action lifecycle events inside the native daemon.
+When `SURFARI_USE_ID` is set, action events are appended to
+`~/.cache/surfari/uses/<use-id>/browser-actions.jsonl` and learning candidates
+are appended to `~/.cache/surfari/uses/<use-id>/learning-candidates.jsonl`.
+`SURFARI_ACTION_LOG_PATH` overrides the action log path for tests or harnesses.
+`SURFARI_CONTEXT_ID` and related `SURFARI_*` context variables tag rows with
+the active org, account, profile, subject, expected domains, and Knox reference.
+`SURFARI_BROWSER_PROFILE_PATH` is persisted only as byte length and SHA-256
+hash.
+
+The log records command and result metadata only. It redacts fill/type text,
+cookies, headers, tokens, passwords, MFA values, proxy credentials, storage
+values, and raw page text before persistence.
+
+When Surfari context is active, protected actions are blocked unless the command
+or active tab matches `SURFARI_EXPECTED_DOMAINS`. Known human-gate domains such
+as `idmsa.apple.com` are observable with read-only commands, but protected
+actions fail closed with `human_gate_required` so login, MFA, and passkey steps
+stay with the human operator.
+
 ## Environment Variables
 
 <table>
@@ -225,6 +247,16 @@ Affected output types: `snapshot`, `get text`, `get html`, `eval`, `console`.
     <tr><td><code>AGENT_BROWSER_CONFIRM_ACTIONS</code></td><td>Comma-separated action categories requiring confirmation</td></tr>
     <tr><td><code>AGENT_BROWSER_CONFIRM_INTERACTIVE</code></td><td>Enable interactive confirmation prompts</td></tr>
     <tr><td><code>AGENT_BROWSER_ENCRYPTION_KEY</code></td><td>64-char hex key for AES-256-GCM encryption (auth vault + sessions)</td></tr>
+    <tr><td><code>SURFARI_USE_ID</code></td><td>Per-use id for redacted Surfari action logs</td></tr>
+    <tr><td><code>SURFARI_ACTION_LOG_PATH</code></td><td>Override Surfari action log JSONL path</td></tr>
+    <tr><td><code>SURFARI_CONTEXT_ID</code></td><td>Active Surfari context id attached to logs</td></tr>
+    <tr><td><code>SURFARI_ORG_ID</code></td><td>Active organization/workspace id</td></tr>
+    <tr><td><code>SURFARI_ACCOUNT_ID</code></td><td>Active account/tenant id</td></tr>
+    <tr><td><code>SURFARI_PROFILE_ID</code></td><td>Active browser/profile id</td></tr>
+    <tr><td><code>SURFARI_SUBJECT_ID</code></td><td>Active user/persona id</td></tr>
+    <tr><td><code>SURFARI_KNOX_REF</code></td><td>Knox credential/access reference</td></tr>
+    <tr><td><code>SURFARI_EXPECTED_DOMAINS</code></td><td>Comma-separated expected domains</td></tr>
+    <tr><td><code>SURFARI_BROWSER_PROFILE_PATH</code></td><td>Browser profile path, persisted only as hash metadata</td></tr>
   </tbody>
 </table>
 

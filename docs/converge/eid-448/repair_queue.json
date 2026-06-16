@@ -1,0 +1,32 @@
+[
+  {
+    "target_id": "EID448-T048",
+    "matrix_id": "M5",
+    "class": "blocked",
+    "gap_type": "policy_gap",
+    "priority": 15,
+    "owner": "human operator",
+    "next_action": "Capture metadata-only human confirmation that the visible team matches LJWV44N8BF without storing credentials or secrets.",
+    "evidence": "Blocked until human confirms the intended Apple account/team during an approved dry run; expected Team ID remains LJWV44N8BF."
+  },
+  {
+    "target_id": "EID448-T049",
+    "matrix_id": "M5",
+    "class": "blocked",
+    "gap_type": "policy_gap",
+    "priority": 15,
+    "owner": "human operator",
+    "next_action": "After human approval, record only handoff metadata for profile download/install; never store provisioning profile contents.",
+    "evidence": "Blocked by profile download/install approval boundary; no provisioning profile download or install was attempted."
+  },
+  {
+    "target_id": "EID448-T050",
+    "matrix_id": "M5",
+    "class": "blocked",
+    "gap_type": "policy_gap",
+    "priority": 15,
+    "owner": "human approval plus coding agent",
+    "next_action": "Review generated Converge rows, action logs, approval packet, and Linear proof after the approved dry run.",
+    "evidence": "Blocked until M1-M4 are green or explicitly owned and the real Apple dry run has approved metadata-only evidence."
+  }
+]

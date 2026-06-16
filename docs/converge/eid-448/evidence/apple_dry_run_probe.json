@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-06-16T14:17:52+00:00",
+  "workflow": "Eidos Knox Apple Developer profile resume",
+  "wrapper": "/Volumes/MacMiniStorage/Eidos/repos-eidos-agi/eidosagi.com/tools/agent-browser/ab",
+  "target_url": "https://developer.apple.com/account/resources/profiles/list",
+  "current_url_sanitized": "https://idmsa.apple.com/IDMSWebAuth/signin",
+  "current_domain": "idmsa.apple.com",
+  "human_gate_observed": true,
+  "commands": [
+    {
+      "args": [
+        "--version"
+      ],
+      "returncode": 0,
+      "stdout_lines": [
+        "agent-browser 0.27.1"
+      ],
+      "stderr_lines": []
+    },
+    {
+      "args": [
+        "--profile",
+        "/tmp/sfa-9491/profile",
+        "open",
+        "https://developer.apple.com/account/resources/profiles/list"
+      ],
+      "returncode": 0,
+      "stdout_lines": [
+        "\u2713 Sign In - Apple",
+        "  https://idmsa.apple.com/IDMSWebAuth/signin?appIdKey=891bd3417a7776362562d2197f89480a8547b108fd934911bcbea0110d07f757&path=%2Faccount%2Fresources%2Fprofiles%2Flist&rv=1"
+      ],
+      "stderr_lines": []
+    },
+    {
+      "args": [
+        "get",
+        "url"
+      ],
+      "returncode": 0,
+      "stdout_lines": [
+        "https://idmsa.apple.com/IDMSWebAuth/signin?appIdKey=891bd3417a7776362562d2197f89480a8547b108fd934911bcbea0110d07f757&path=%2Faccount%2Fresources%2Fprofiles%2Flist&rv=1"
+      ],
+      "stderr_lines": []
+    }
+  ],
+  "close": {
+    "args": [
+      "close",
+      "--all"
+    ],
+    "returncode": 0,
+    "stdout_lines": [
+      "\u2713 Closed session: sfa9491"
+    ],
+    "stderr_lines": []
+  },
+  "action_log_rows": 8,
+  "allowed_domains": [
+    "appleid.apple.com",
+    "developer.apple.com",
+    "idmsa.apple.com"
+  ],
+  "forbidden_actions_attempted": [],
+  "checks": {
+    "wrapper_routes_to_surfari": true,
+    "open_command_completed": true,
+    "current_domain_allowed": true,
+    "no_protected_action_attempted": true,
+    "no_forbidden_secret_terms_in_log": true
+  },
+  "passed": true,
+  "stopped_before": [
+    "password entry",
+    "MFA or OTP entry",
+    "passkey approval",
+    "legal agreement",
+    "payment or billing",
+    "profile download",
+    "profile install",
+    "final submission"
+  ]
+}

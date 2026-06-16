@@ -90,6 +90,36 @@ agent-browser screenshot page.png
 agent-browser close
 ```
 
+## Surfari Learning Logs
+
+This fork records redacted daemon-side action events for Surfari learning.
+Every executed command that reaches the native daemon writes `action_started`
+and `action_finished` JSONL rows without changing normal command output.
+
+```bash
+SURFARI_USE_ID=research-example agent-browser open https://example.com
+```
+
+When `SURFARI_USE_ID` is set, action events are written to
+`~/.cache/surfari/uses/<use-id>/browser-actions.jsonl`, and learning
+candidates are written to
+`~/.cache/surfari/uses/<use-id>/learning-candidates.jsonl`. Use
+`SURFARI_ACTION_LOG_PATH=/path/to/actions.jsonl` to override the action log
+destination for tests or harnesses. Set `SURFARI_CONTEXT_ID` and related
+`SURFARI_*` context variables to tag logs with the active org, account,
+profile, subject, expected domains, and Knox reference.
+
+Sensitive command values are redacted before persistence, including fill/type
+text, cookies, headers, tokens, passwords, MFA values, proxy credentials, and
+storage values. Result logs record output shape, byte counts, and hashes rather
+than raw page text.
+
+When Surfari context is active, protected actions are blocked unless the
+command or active tab matches `SURFARI_EXPECTED_DOMAINS`. Known human-gate
+domains such as `idmsa.apple.com` are observable with read-only commands, but
+protected actions fail closed with `human_gate_required` so login, MFA, and
+passkey steps stay with the human operator.
+
 Headless Chromium screenshots hide native scrollbars for consistent image output.
 Pass `--hide-scrollbars false` when launching to keep native scrollbars visible.
 
@@ -651,6 +681,16 @@ agent-browser includes security features for safe AI agent deployments. All feat
 | `AGENT_BROWSER_ACTION_POLICY`       | Path to action policy JSON file          |
 | `AGENT_BROWSER_CONFIRM_ACTIONS`     | Action categories requiring confirmation |
 | `AGENT_BROWSER_CONFIRM_INTERACTIVE` | Enable interactive confirmation prompts  |
+| `SURFARI_USE_ID`                    | Per-use id for Surfari action logs       |
+| `SURFARI_ACTION_LOG_PATH`           | Override Surfari action log path         |
+| `SURFARI_CONTEXT_ID`                | Active Surfari context id                |
+| `SURFARI_ORG_ID`                    | Active organization/workspace id         |
+| `SURFARI_ACCOUNT_ID`                | Active account/tenant id                 |
+| `SURFARI_PROFILE_ID`                | Active browser/profile id                |
+| `SURFARI_SUBJECT_ID`                | Active user/persona id                   |
+| `SURFARI_KNOX_REF`                  | Knox credential/access reference         |
+| `SURFARI_EXPECTED_DOMAINS`          | Comma-separated expected domains         |
+| `SURFARI_BROWSER_PROFILE_PATH`      | Browser profile path, logged as hash     |
 
 See [Security documentation](https://agent-browser.dev/security) for details.
 
@@ -744,6 +784,15 @@ This is useful for multimodal AI models that can reason about visual layout, unl
 | `-q`, `--quiet` | Show only AI text responses, hide tool calls (chat) |
 | `--config <path>` | Use a custom config file (or `AGENT_BROWSER_CONFIG` env) |
 | `--debug` | Debug output |
+
+Surfari learning logs are controlled by environment variables rather than CLI
+flags. Set `SURFARI_USE_ID` to write action events under
+`~/.cache/surfari/uses/<use-id>/`, or set `SURFARI_ACTION_LOG_PATH` to choose a
+specific JSONL action log path. Set `SURFARI_CONTEXT_ID`, `SURFARI_ORG_ID`,
+`SURFARI_ACCOUNT_ID`, `SURFARI_PROFILE_ID`, `SURFARI_SUBJECT_ID`,
+`SURFARI_KNOX_REF`, and `SURFARI_EXPECTED_DOMAINS` to attach a structured
+context envelope to each action row. `SURFARI_BROWSER_PROFILE_PATH` is logged
+only as byte length and SHA-256 hash.
 
 ## Observability Dashboard
 

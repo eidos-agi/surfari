@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-06-16T15:31:55+00:00",
+  "fixture": "docs/converge/eid-448/fixtures/fake_browser_workflows.json",
+  "surface": "local ThreadingHTTPServer",
+  "base_url": "http://127.0.0.1:55822",
+  "results": [
+    {
+      "id": "fake_apple_redirect",
+      "matrix_rows": [
+        "EID448-T032",
+        "EID448-T033"
+      ],
+      "url": "http://127.0.0.1:55822/developer/account/resources/profiles",
+      "expected_status": 302,
+      "status": 302,
+      "expected_marker": "redirects-to-signin",
+      "marker_found": true,
+      "location_ok": true,
+      "class": "pass"
+    },
+    {
+      "id": "fake_apple_signin_gate",
+      "matrix_rows": [
+        "EID448-T034"
+      ],
+      "url": "http://127.0.0.1:55822/appleauth/auth/signin",
+      "expected_status": 200,
+      "status": 200,
+      "expected_marker": "human-gate:apple-sign-in",
+      "marker_found": true,
+      "location_ok": true,
+      "class": "pass"
+    },
+    {
+      "id": "fake_profile_download_handoff",
+      "matrix_rows": [
+        "EID448-T035"
+      ],
+      "url": "http://127.0.0.1:55822/developer/account/resources/profiles/download",
+      "expected_status": 200,
+      "status": 200,
+      "expected_marker": "download-handoff:profile-metadata-only",
+      "marker_found": true,
+      "location_ok": true,
+      "class": "pass"
+    },
+    {
+      "id": "fake_stale_react_ref",
+      "matrix_rows": [
+        "EID448-T036",
+        "EID448-T037"
+      ],
+      "url": "http://127.0.0.1:55822/fixtures/stale-react-ref",
+      "expected_status": 200,
+      "status": 200,
+      "expected_marker": "stale-ref:rerendered",
+      "marker_found": true,
+      "location_ok": true,
+      "class": "pass"
+    },
+    {
+      "id": "fake_active_tab_drift",
+      "matrix_rows": [
+        "EID448-T038",
+        "EID448-T039"
+      ],
+      "url": "http://127.0.0.1:55822/fixtures/active-tab-drift",
+      "expected_status": 200,
+      "status": 200,
+      "expected_marker": "active-tab-drift:wrong-surface",
+      "marker_found": true,
+      "location_ok": true,
+      "class": "pass"
+    },
+    {
+      "id": "fake_multi_account_saas",
+      "matrix_rows": [
+        "EID448-T040"
+      ],
+      "url": "http://127.0.0.1:55822/fixtures/multi-account-saas",
+      "expected_status": 200,
+      "status": 200,
+      "expected_marker": "account-mismatch:visible",
+      "marker_found": true,
+      "location_ok": true,
+      "class": "pass"
+    },
+    {
+      "id": "fake_prompt_injection",
+      "matrix_rows": [
+        "EID448-T041"
+      ],
+      "url": "http://127.0.0.1:55822/fixtures/prompt-injection",
+      "expected_status": 200,
+      "status": 200,
+      "expected_marker": "prompt-injection:untrusted-page-text",
+      "marker_found": true,
+      "location_ok": true,
+      "class": "pass"
+    }
+  ],
+  "passed": 7,
+  "failed": 0
+}

@@ -261,6 +261,14 @@ pub struct DaemonState {
     /// Last viewport settings (width, height, deviceScaleFactor, mobile),
     /// re-applied to new contexts (e.g., recording).
     pub viewport: Option<(i32, i32, f64, bool)>,
+    #[cfg(test)]
+    pub test_no_auto_launch: bool,
+    #[cfg(test)]
+    pub test_surfari_action_log_path: Option<PathBuf>,
+    #[cfg(test)]
+    pub test_surfari_learning_candidates_path: Option<PathBuf>,
+    #[cfg(test)]
+    pub test_surfari_use_id: Option<String>,
 }
 
 impl DaemonState {
@@ -315,6 +323,14 @@ impl DaemonState {
                 .and_then(|s| s.parse::<u64>().ok())
                 .unwrap_or(30_000),
             viewport: None,
+            #[cfg(test)]
+            test_no_auto_launch: false,
+            #[cfg(test)]
+            test_surfari_action_log_path: None,
+            #[cfg(test)]
+            test_surfari_learning_candidates_path: None,
+            #[cfg(test)]
+            test_surfari_use_id: None,
         }
     }
 
@@ -1214,6 +1230,13 @@ pub async fn execute_command(cmd: &Value, state: &mut DaemonState) -> Value {
         }
     }
 
+    let surfari_log_scope = super::surfari::ActionLogScope::start(cmd, state);
+    if let Some(error) = surfari_log_scope.governance_error() {
+        let resp = error_response(&id, &error);
+        surfari_log_scope.finish(&resp, state);
+        return resp;
+    }
+
     let skip_launch = matches!(
         action,
         "" | "launch"
@@ -1258,7 +1281,9 @@ pub async fn execute_command(cmd: &Value, state: &mut DaemonState) -> Value {
                 state.update_stream_client().await;
             }
             if let Err(e) = auto_launch(state).await {
-                return error_response(&id, &format!("Auto-launch failed: {}", e));
+                let resp = error_response(&id, &format!("Auto-launch failed: {}", e));
+                surfari_log_scope.finish(&resp, state);
+                return resp;
             }
         }
 
@@ -1273,13 +1298,15 @@ pub async fn execute_command(cmd: &Value, state: &mut DaemonState) -> Value {
     if matches!(state.backend_type, BackendType::WebDriver)
         && WEBDRIVER_UNSUPPORTED_ACTIONS.contains(&action)
     {
-        return error_response(
+        let resp = error_response(
             &id,
             &format!(
                 "Action '{}' is not supported on the WebDriver backend",
                 action
             ),
         );
+        surfari_log_scope.finish(&resp, state);
+        return resp;
     }
 
     let result = match action {
@@ -1493,6 +1520,8 @@ pub async fn execute_command(cmd: &Value, state: &mut DaemonState) -> Value {
         }
     }
 
+    surfari_log_scope.finish(&resp, state);
+
     resp
 }
 
@@ -1514,6 +1543,11 @@ async fn connect_auto_with_fresh_tab() -> Result<BrowserManager, String> {
 }
 
 async fn auto_launch(state: &mut DaemonState) -> Result<(), String> {
+    #[cfg(test)]
+    if state.test_no_auto_launch {
+        return Err("Auto-launch disabled for test".to_string());
+    }
+
     let mut options = launch_options_from_env();
 
     // Use the stream server's viewport dimensions for --window-size so the
@@ -1818,6 +1852,11 @@ async fn try_load_storage_state(state: &DaemonState, path: &Option<String>) {
 // ---------------------------------------------------------------------------
 
 async fn handle_launch(cmd: &Value, state: &mut DaemonState) -> Result<Value, String> {
+    #[cfg(test)]
+    if state.test_no_auto_launch {
+        return Err("Launch disabled for test".to_string());
+    }
+
     let headless = cmd
         .get("headless")
         .and_then(|v| v.as_bool())
@@ -8326,6 +8365,220 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_surfari_logs_successful_non_browser_command() {
+        let guard = EnvGuard::new(&[
+            "SURFARI_CONTEXT_ID",
+            "SURFARI_ORG_ID",
+            "SURFARI_ACCOUNT_ID",
+            "SURFARI_PROFILE_ID",
+            "SURFARI_SUBJECT_ID",
+            "SURFARI_KNOX_REF",
+            "SURFARI_EXPECTED_DOMAINS",
+            "SURFARI_BROWSER_PROFILE_PATH",
+        ]);
+        guard.set("SURFARI_CONTEXT_ID", "eidos");
+        guard.set("SURFARI_ORG_ID", "org-eidos");
+        guard.set("SURFARI_ACCOUNT_ID", "acct-prod");
+        guard.set("SURFARI_PROFILE_ID", "chrome-eidos");
+        guard.set("SURFARI_SUBJECT_ID", "daniel-work");
+        guard.set("SURFARI_KNOX_REF", "knox://surfari/eidos");
+        guard.set("SURFARI_EXPECTED_DOMAINS", "https://linear.app/eidos-agi");
+        guard.set(
+            "SURFARI_BROWSER_PROFILE_PATH",
+            "/Users/dshanklin/Library/Chrome/Profile 1",
+        );
+        let temp = tempfile::tempdir().expect("tempdir should be created");
+        let log_path = temp.path().join("actions.jsonl");
+        let candidate_path = temp.path().join("learning-candidates.jsonl");
+
+        let mut state = DaemonState::new();
+        state.session_id = "surfari-test-session".to_string();
+        state.test_surfari_action_log_path = Some(log_path.clone());
+        state.test_surfari_learning_candidates_path = Some(candidate_path.clone());
+        state.test_surfari_use_id = Some("use_daemon_test".to_string());
+        let response = execute_command(
+            &json!({ "id": "cmd-1", "action": "stream_status" }),
+            &mut state,
+        )
+        .await;
+
+        assert_eq!(response["success"], true);
+        let rows: Vec<Value> = fs::read_to_string(&log_path)
+            .expect("action log should exist")
+            .lines()
+            .map(|line| serde_json::from_str(line).expect("row should be valid json"))
+            .collect();
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0]["event_type"], "action_started");
+        assert_eq!(rows[1]["event_type"], "action_finished");
+        assert_eq!(rows[0]["action"], "stream_status");
+        assert_eq!(rows[0]["use_id"], "use_daemon_test");
+        assert_eq!(rows[0]["governance"]["decision"], "allowed");
+        assert_eq!(rows[0]["governance"]["reason"], "read_only_action");
+        assert_eq!(
+            rows[0]["browser_anchor"]["surfari_session_id"],
+            "surfari-test-session"
+        );
+        assert_eq!(rows[0]["surfari_context"]["status"], "set");
+        assert_eq!(rows[0]["surfari_context"]["context_id"], "eidos");
+        assert_eq!(rows[0]["surfari_context"]["org_id"], "org-eidos");
+        assert_eq!(rows[0]["surfari_context"]["account_id"], "acct-prod");
+        assert_eq!(
+            rows[0]["surfari_context"]["expected_domains"][0],
+            "linear.app"
+        );
+        assert!(rows[0]["surfari_context"]["browser_profile_path"]["sha256"].is_string());
+        assert_eq!(rows[0]["browser_anchor"]["tab_count"], 0);
+        assert_eq!(rows[1]["success"], true);
+        assert_eq!(
+            rows[1]["browser_anchor"]["surfari_session_id"],
+            "surfari-test-session"
+        );
+        assert_eq!(rows[1]["surfari_context"]["profile_id"], "chrome-eidos");
+        let candidates: Vec<Value> = fs::read_to_string(&candidate_path)
+            .expect("learning candidate log should exist")
+            .lines()
+            .map(|line| serde_json::from_str(line).expect("candidate row should be valid json"))
+            .collect();
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(candidates[0]["action"], "stream_status");
+        assert_eq!(
+            candidates[0]["browser_anchor"]["surfari_session_id"],
+            "surfari-test-session"
+        );
+        assert_eq!(candidates[0]["surfari_context"]["context_id"], "eidos");
+        let candidate_text = serde_json::to_string(&candidates[0]).unwrap();
+        assert!(!candidate_text.contains("/Users/dshanklin/Library/Chrome/Profile 1"));
+    }
+
+    #[tokio::test]
+    async fn test_surfari_logs_failed_non_browser_command() {
+        let guard = EnvGuard::new(&[
+            "SURFARI_CONTEXT_ID",
+            "SURFARI_ORG_ID",
+            "SURFARI_ACCOUNT_ID",
+            "SURFARI_PROFILE_ID",
+            "SURFARI_SUBJECT_ID",
+            "SURFARI_KNOX_REF",
+            "SURFARI_EXPECTED_DOMAINS",
+            "SURFARI_BROWSER_PROFILE_PATH",
+        ]);
+        for name in [
+            "SURFARI_CONTEXT_ID",
+            "SURFARI_ORG_ID",
+            "SURFARI_ACCOUNT_ID",
+            "SURFARI_PROFILE_ID",
+            "SURFARI_SUBJECT_ID",
+            "SURFARI_KNOX_REF",
+            "SURFARI_EXPECTED_DOMAINS",
+            "SURFARI_BROWSER_PROFILE_PATH",
+        ] {
+            guard.remove(name);
+        }
+        let temp = tempfile::tempdir().expect("tempdir should be created");
+        let log_path = temp.path().join("actions.jsonl");
+
+        let mut state = DaemonState::new();
+        state.session_id = "surfari-failure-test-session".to_string();
+        state.test_surfari_action_log_path = Some(log_path.clone());
+        state.test_surfari_use_id = Some("use_daemon_failure_test".to_string());
+        let response = execute_command(
+            &json!({ "id": "cmd-2", "action": "stream_disable" }),
+            &mut state,
+        )
+        .await;
+
+        assert_eq!(response["success"], false);
+        let rows: Vec<Value> = fs::read_to_string(&log_path)
+            .expect("action log should exist")
+            .lines()
+            .map(|line| serde_json::from_str(line).expect("row should be valid json"))
+            .collect();
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0]["event_type"], "action_started");
+        assert_eq!(rows[1]["event_type"], "action_finished");
+        assert_eq!(rows[1]["success"], false);
+        assert_eq!(rows[1]["result"]["error_type"], "command_error");
+        assert_eq!(rows[1]["surfari_context"]["status"], "unset");
+        assert_eq!(rows[1]["browser_anchor"]["tab_count"], 0);
+        assert_eq!(rows[1]["governance"]["reason"], "governance_inactive");
+    }
+
+    #[tokio::test]
+    async fn test_surfari_context_governance_blocks_wrong_domain_protected_action() {
+        let guard = EnvGuard::new(&[
+            "SURFARI_CONTEXT_ID",
+            "SURFARI_ORG_ID",
+            "SURFARI_ACCOUNT_ID",
+            "SURFARI_PROFILE_ID",
+            "SURFARI_SUBJECT_ID",
+            "SURFARI_KNOX_REF",
+            "SURFARI_EXPECTED_DOMAINS",
+            "SURFARI_BROWSER_PROFILE_PATH",
+        ]);
+        guard.set("SURFARI_CONTEXT_ID", "eidos");
+        guard.set("SURFARI_ORG_ID", "org-eidos");
+        guard.set("SURFARI_EXPECTED_DOMAINS", "linear.app");
+        for name in [
+            "SURFARI_ACCOUNT_ID",
+            "SURFARI_PROFILE_ID",
+            "SURFARI_SUBJECT_ID",
+            "SURFARI_KNOX_REF",
+            "SURFARI_BROWSER_PROFILE_PATH",
+        ] {
+            guard.remove(name);
+        }
+        let temp = tempfile::tempdir().expect("tempdir should be created");
+        let log_path = temp.path().join("actions.jsonl");
+
+        let mut state = DaemonState::new();
+        state.session_id = "surfari-governance-test-session".to_string();
+        state.test_surfari_action_log_path = Some(log_path.clone());
+        state.test_surfari_use_id = Some("use_governance_test".to_string());
+        let response = execute_command(
+            &json!({
+                "id": "cmd-governance",
+                "action": "fill",
+                "url": "https://accounts.example.com/login",
+                "selector": "#password",
+                "value": "seeded fake secret"
+            }),
+            &mut state,
+        )
+        .await;
+
+        assert_eq!(response["success"], false);
+        assert!(response["error"]
+            .as_str()
+            .unwrap()
+            .contains("domain_mismatch"));
+        assert!(
+            state.browser.is_none(),
+            "blocked governance action should not auto-launch a browser"
+        );
+
+        let rows: Vec<Value> = fs::read_to_string(&log_path)
+            .expect("action log should exist")
+            .lines()
+            .map(|line| serde_json::from_str(line).expect("row should be valid json"))
+            .collect();
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0]["event_type"], "action_started");
+        assert_eq!(rows[1]["event_type"], "action_finished");
+        assert_eq!(rows[0]["governance"]["decision"], "blocked");
+        assert_eq!(rows[0]["governance"]["reason"], "domain_mismatch");
+        assert_eq!(rows[0]["governance"]["expected_domains"][0], "linear.app");
+        assert_eq!(
+            rows[0]["governance"]["observed_domain"],
+            "accounts.example.com"
+        );
+        assert_eq!(rows[1]["success"], false);
+        assert_eq!(rows[1]["governance"]["decision"], "blocked");
+        let log_text = serde_json::to_string(&rows).unwrap();
+        assert!(!log_text.contains("seeded fake secret"));
+    }
+
+    #[tokio::test]
     async fn test_stream_disable_clears_state_when_stream_file_removal_fails() {
         let guard = EnvGuard::new(&["AGENT_BROWSER_SOCKET_DIR", "AGENT_BROWSER_SESSION"]);
         let socket_dir = unique_socket_dir("stream-disable-cleanup");
@@ -8843,6 +9096,7 @@ mod tests {
     #[tokio::test]
     async fn test_execute_unknown_command() {
         let mut state = DaemonState::new();
+        state.test_no_auto_launch = true;
         let cmd = json!({ "action": "unknown_action_xyz", "id": "test-1" });
         let result = execute_command(&cmd, &mut state).await;
         assert_eq!(result["success"], false);
@@ -8859,7 +9113,6 @@ mod tests {
         let mut state = DaemonState::new();
         let cmd = json!({ "id": "test-2" });
         let result = execute_command(&cmd, &mut state).await;
-        // Empty action triggers auto-launch which will fail without a browser
         assert_eq!(result["success"], false);
     }
 
@@ -8875,6 +9128,7 @@ mod tests {
     #[tokio::test]
     async fn test_navigate_without_browser() {
         let mut state = DaemonState::new();
+        state.test_no_auto_launch = true;
         {
             let mut df = state.domain_filter.write().await;
             *df = Some(DomainFilter::new("example.com"));

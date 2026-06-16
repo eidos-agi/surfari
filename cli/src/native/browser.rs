@@ -1456,6 +1456,10 @@ impl BrowserManager {
         self.pages.get(self.active_page_index).map(|p| p.tab_id)
     }
 
+    pub fn active_page_info(&self) -> Option<PageInfo> {
+        self.pages.get(self.active_page_index).cloned()
+    }
+
     /// Returns true if a tab with the given stable `tab_id` is still open.
     pub fn has_tab_id(&self, tab_id: u32) -> bool {
         self.pages.iter().any(|p| p.tab_id == tab_id)
