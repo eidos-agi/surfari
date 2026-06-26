@@ -96,6 +96,26 @@ This fork records redacted daemon-side action events for Surfari learning.
 Every executed command that reaches the native daemon writes `action_started`
 and `action_finished` JSONL rows without changing normal command output.
 
+Check the native Surfari governance surface without opening a browser or using
+the legacy `ab` wrapper:
+
+```bash
+agent-browser surfari status --json
+```
+
+The status report includes Surfari context, expected domains, action-log paths,
+human-gate boundaries, and `wrapper_required: false`. For the Eidos Knox Apple
+Developer resume flow, set metadata-only context variables before the status
+check or browser commands:
+
+```bash
+SURFARI_CONTEXT_ID=eid-448 \
+SURFARI_PROFILE_ID=surfari-local \
+SURFARI_KNOX_REF=knox://apple-developer/eidos-knox \
+SURFARI_EXPECTED_DOMAINS=developer.apple.com,idmsa.apple.com \
+agent-browser surfari status --json
+```
+
 ```bash
 SURFARI_USE_ID=research-example agent-browser open https://example.com
 ```

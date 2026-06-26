@@ -2638,6 +2638,32 @@ Examples:
 "##
         }
 
+        "surfari" => {
+            r##"
+agent-browser surfari - Surfari governed-browser metadata
+
+Usage: agent-browser surfari [status] [--json]
+
+Reports the native Surfari governance surface from this binary without
+opening a browser or routing through the legacy ab wrapper. The status output
+summarizes Surfari context, expected domains, action-log destinations, human
+gates, and whether a wrapper is required.
+
+Subcommands:
+  status               Show Surfari governance and install status
+
+Global Options:
+  --json               Output as JSON
+
+Examples:
+  agent-browser surfari status
+  agent-browser surfari status --json
+  SURFARI_CONTEXT_ID=eid-448 \
+    SURFARI_EXPECTED_DOMAINS=developer.apple.com,idmsa.apple.com \
+    agent-browser surfari status --json
+"##
+        }
+
         // === Dashboard ===
         "dashboard" => {
             r##"
@@ -3158,6 +3184,9 @@ Dashboard:
   dashboard start --port <n> Start on a specific port
   dashboard stop             Stop the dashboard server
 
+Surfari:
+  surfari status             Show governed-browser status without wrapper/daemon
+
 Setup:
   install                    Install browser binaries
   install --with-deps        Also install system dependencies (Linux)
@@ -3165,6 +3194,7 @@ Setup:
   doctor [--fix]             Diagnose install; auto-clean stale files
   dashboard start            Start the observability dashboard
   profiles                   List available Chrome profiles
+  surfari status             Check native Surfari governance readiness
 
 Snapshot Options:
   -i, --interactive          Only interactive elements

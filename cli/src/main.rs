@@ -60,6 +60,70 @@ fn print_json_error_with_type(message: impl AsRef<str>, error_type: &str) {
     }));
 }
 
+fn run_surfari(clean: &[String], json_mode: bool) {
+    match clean.get(1).map(|s| s.as_str()).unwrap_or("status") {
+        "status" => {
+            let status = native::surfari::status();
+            if json_mode {
+                print_json_value(json!({
+                    "success": true,
+                    "data": status,
+                }));
+                return;
+            }
+            println!(
+                "{} Surfari governed browser layer",
+                color::success_indicator()
+            );
+            println!(
+                "Version: {}",
+                status
+                    .get("version")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown")
+            );
+            println!("Wrapper required: false");
+            let context = &status["governance"]["context"];
+            println!(
+                "Context: {}",
+                context
+                    .get("status")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown")
+            );
+            if let Some(domains) = context.get("expected_domains").and_then(|v| v.as_array()) {
+                if !domains.is_empty() {
+                    let labels = domains
+                        .iter()
+                        .filter_map(|v| v.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    println!("Expected domains: {labels}");
+                }
+            }
+            println!(
+                "Action log: {}",
+                status["logging"]
+                    .get("action_log_path")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown")
+            );
+            println!(
+                "Human gates: Apple login, MFA, passkeys, legal agreements, payments, profile download/install, final submission"
+            );
+        }
+        unknown => {
+            let msg = format!("Unknown Surfari subcommand: {unknown}\nValid options: status");
+            if json_mode {
+                print_json_error_with_type(msg, "unknown_subcommand");
+            } else {
+                eprintln!("{} {}", color::error_indicator(), msg);
+            }
+            exit(1);
+        }
+    }
+}
+
 fn should_send_hide_scrollbars_launch_option(
     cli_hide_scrollbars: bool,
     hide_scrollbars: bool,
@@ -551,6 +615,14 @@ fn main() {
 
     if clean.is_empty() {
         print_help();
+        return;
+    }
+
+    // Handle Surfari metadata/status separately. This is intentionally local
+    // and read-only so governed-browser readiness can be checked without a
+    // daemon, browser profile, or legacy wrapper.
+    if clean.first().map(|s| s.as_str()) == Some("surfari") {
+        run_surfari(&clean, flags.json);
         return;
     }
 

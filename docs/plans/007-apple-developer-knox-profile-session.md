@@ -35,7 +35,8 @@ The Apple Developer incident state is:
 Recommended definition for the new Surfari to be online:
 
 1. Local online: this fork builds, passes the Surfari guard tests, and the local
-   `ab` or Surfari wrapper can invoke the forked binary for governed sessions.
+   native binary reports Surfari governance readiness with
+   `agent-browser surfari status --json`.
 2. Knox workflow online: a metadata-only Apple Developer playbook or harness can
    answer whether the active browser surface is on the intended profile,
    Surfari session, web-account session, and expected domain before protected
@@ -47,8 +48,10 @@ Recommended definition for the new Surfari to be online:
    available.
 
 Hosted docs, hosted dashboard, and package publishing are not required to unblock
-the Knox signing incident. A local build plus wrapper routing is the immediate
-usable surface.
+the Knox signing incident. A local build plus native Surfari status/guard
+commands are the immediate usable surface; the old `eidosagi.com`
+`apple-dev-guard` and `ab` scripts remain incident evidence, not the product
+route.
 
 ## Implementation Plan
 
@@ -64,8 +67,9 @@ usable surface.
 6. Route the incident wrapper inputs into Surfari context envs:
    `SURFARI_CONTEXT_ID`, `SURFARI_PROFILE_ID`, `SURFARI_EXPECTED_DOMAINS`, and
    `SURFARI_KNOX_REF`.
-7. Build and link the fork locally, then update the wrapper only after the binary
-   proof is clean.
+7. Build the fork locally, verify `agent-browser surfari status --json`, then
+   use the native binary for governed sessions instead of adding wrapper
+   indirection.
 
 ## Data/Interface Contract
 
@@ -114,7 +118,7 @@ Attach to EID-448:
 
 - Git remotes, branch, dirty state, and upstream position.
 - Test command outputs and pass counts.
-- Local binary path or wrapper path once built and linked.
+- Local binary path and `agent-browser surfari status --json` output once built.
 - Any blocker for pnpm, publishing, hosted docs, dashboard, credentials, or
   release ownership.
 
@@ -128,7 +132,7 @@ Attach to EID-448:
 
 ## Done Means
 
-The local fork can be built and routed through Surfari for the Knox Apple
-Developer resume flow, protected actions fail closed at Apple Sign In, and the
-remaining Apple login/MFA/profile-download gate is documented with metadata-only
-proof.
+The local fork can be built and used directly as the native Surfari-governed
+browser surface for the Knox Apple Developer resume flow, protected actions fail
+closed at Apple Sign In, and the remaining Apple login/MFA/profile-download gate
+is documented with metadata-only proof.

@@ -6,11 +6,55 @@ pub mod learning;
 pub mod redaction;
 
 use serde_json::{json, Value};
+use std::env;
 use std::path::PathBuf;
 use std::time::Instant;
 use uuid::Uuid;
 
 use super::actions::DaemonState;
+
+const HUMAN_GATE_DOMAINS: &[&str] = &["idmsa.apple.com", "appleid.apple.com"];
+
+pub fn status() -> Value {
+    let use_id = action_log::current_use_id();
+    let action_log_path = action_log::resolve_log_path(use_id.as_deref());
+    let learning_candidates_path = action_log::resolve_learning_candidates_path(use_id.as_deref());
+    let executable_path = env::current_exe()
+        .ok()
+        .map(|path| path.display().to_string());
+
+    json!({
+        "product": "Surfari",
+        "binary": "agent-browser",
+        "version": env!("CARGO_PKG_VERSION"),
+        "governance": {
+            "status": "available",
+            "context": context::capture(),
+            "human_gate_domains": HUMAN_GATE_DOMAINS,
+            "protected_action_policy": "fail_closed_when_context_or_expected_domain_mismatch",
+        },
+        "logging": {
+            "use_id": use_id,
+            "action_log_path": action_log_path.display().to_string(),
+            "learning_candidates_path": learning_candidates_path
+                .map(|path| path.display().to_string()),
+        },
+        "install": {
+            "executable_path": executable_path,
+            "source": "native_fork_binary",
+            "wrapper_required": false,
+        },
+        "boundaries": {
+            "apple_login": "human_gate",
+            "mfa": "human_gate",
+            "passkeys": "human_gate",
+            "legal_agreements": "human_gate",
+            "payments": "human_gate",
+            "profile_download_install": "human_gate",
+            "final_submission": "human_gate",
+        }
+    })
+}
 
 pub struct ActionLogScope {
     action_id: String,
@@ -172,4 +216,48 @@ fn resolve_candidate_path(_state: &DaemonState, use_id: Option<&str>) -> Option<
 #[cfg(test)]
 fn resolve_candidate_path(state: &DaemonState, _use_id: Option<&str>) -> Option<PathBuf> {
     state.test_surfari_learning_candidates_path.clone()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::EnvGuard;
+
+    #[test]
+    fn status_reports_native_surfari_without_wrapper() {
+        let guard = EnvGuard::new(&[
+            context::CONTEXT_ID_ENV,
+            context::ORG_ID_ENV,
+            context::ACCOUNT_ID_ENV,
+            context::PROFILE_ID_ENV,
+            context::SUBJECT_ID_ENV,
+            context::KNOX_REF_ENV,
+            context::EXPECTED_DOMAINS_ENV,
+            context::BROWSER_PROFILE_PATH_ENV,
+            action_log::ACTION_LOG_PATH_ENV,
+            action_log::USE_ID_ENV,
+        ]);
+        guard.set(context::CONTEXT_ID_ENV, "eid-448");
+        guard.set(
+            context::EXPECTED_DOMAINS_ENV,
+            "developer.apple.com,idmsa.apple.com",
+        );
+        guard.set(action_log::USE_ID_ENV, "native-status-test");
+
+        let status = status();
+
+        assert_eq!(status["product"], "Surfari");
+        assert_eq!(status["install"]["source"], "native_fork_binary");
+        assert_eq!(status["install"]["wrapper_required"], false);
+        assert_eq!(status["governance"]["status"], "available");
+        assert_eq!(
+            status["governance"]["context"]["expected_domains"][0],
+            "developer.apple.com"
+        );
+        assert_eq!(status["boundaries"]["mfa"], "human_gate");
+        assert!(status["logging"]["action_log_path"]
+            .as_str()
+            .unwrap()
+            .ends_with("native-status-test/browser-actions.jsonl"));
+    }
 }
