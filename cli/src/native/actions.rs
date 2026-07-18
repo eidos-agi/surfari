@@ -202,6 +202,8 @@ fn launch_hash(opts: &LaunchOptions) -> u64 {
 
 pub struct DaemonState {
     pub browser: Option<BrowserManager>,
+    /// Provider-owned remote session retained until the browser is closed.
+    pub provider_session: Option<providers::ProviderSession>,
     pub appium: Option<AppiumManager>,
     pub safari_driver: Option<safari::SafariDriverProcess>,
     pub webdriver_backend: Option<super::webdriver::backend::WebDriverBackend>,
@@ -275,6 +277,7 @@ impl DaemonState {
     pub fn new() -> Self {
         Self {
             browser: None,
+            provider_session: None,
             appium: None,
             safari_driver: None,
             webdriver_backend: None,
@@ -361,6 +364,25 @@ impl DaemonState {
         s.stream_client = stream_client;
         s.stream_server = stream_server;
         s
+    }
+
+    /// Close the CDP connection and explicitly release any provider-owned
+    /// remote session. Provider cleanup still runs when closing CDP fails.
+    pub async fn close_browser(&mut self) -> Result<(), String> {
+        let close_error = if let Some(mut browser) = self.browser.take() {
+            browser.close().await.err()
+        } else {
+            None
+        };
+
+        if let Some(provider_session) = self.provider_session.take() {
+            providers::close_provider_session(&provider_session).await;
+        }
+
+        if let Some(error) = close_error {
+            return Err(error);
+        }
+        Ok(())
     }
 
     fn subscribe_to_browser_events(&mut self) {
@@ -1626,6 +1648,7 @@ async fn auto_launch(state: &mut DaemonState) -> Result<(), String> {
                 Ok(mgr) => {
                     state.reset_input_state();
                     state.browser = Some(mgr);
+                    state.provider_session = conn.session;
                     state.subscribe_to_browser_events();
                     state.start_fetch_handler();
                     state.start_dialog_handler();
@@ -1806,11 +1829,7 @@ async fn load_storage_state(state: &DaemonState, path: &Option<String>) -> Resul
 }
 
 async fn rollback_failed_launch(state: &mut DaemonState) -> Result<(), String> {
-    let close_error = if let Some(mut mgr) = state.browser.take() {
-        mgr.close().await.err()
-    } else {
-        None
-    };
+    let close_error = state.close_browser().await.err();
 
     state.launch_hash = None;
     state.screencasting = false;
@@ -2056,6 +2075,7 @@ async fn handle_launch(cmd: &Value, state: &mut DaemonState) -> Result<Value, St
                     Ok(mgr) => {
                         state.reset_input_state();
                         state.browser = Some(mgr);
+                        state.provider_session = conn.session;
                         state.subscribe_to_browser_events();
                         state.start_fetch_handler();
                         state.start_dialog_handler();
@@ -2457,10 +2477,7 @@ async fn handle_close(state: &mut DaemonState) -> Result<Value, String> {
             }
         }
     }
-    if let Some(ref mut mgr) = state.browser {
-        mgr.close().await?;
-    }
-    state.browser = None;
+    state.close_browser().await?;
     state.launch_hash = None;
     state.screencasting = false;
     state.reset_input_state();
@@ -9123,6 +9140,20 @@ mod tests {
         let result = execute_command(&cmd, &mut state).await;
         assert_eq!(result["success"], true);
         assert_eq!(result["data"]["closed"], true);
+    }
+
+    #[tokio::test]
+    async fn test_close_browser_releases_provider_session_without_browser() {
+        let mut state = DaemonState::new();
+        state.provider_session = Some(providers::ProviderSession {
+            provider: "test-provider".to_string(),
+            session_id: "test-session".to_string(),
+        });
+
+        state.close_browser().await.unwrap();
+
+        assert!(state.browser.is_none());
+        assert!(state.provider_session.is_none());
     }
 
     #[tokio::test]

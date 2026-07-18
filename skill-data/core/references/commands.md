@@ -396,3 +396,5 @@ AGENT_BROWSER_STREAM_PORT="9223"             # Override WebSocket streaming port
 AGENT_BROWSER_CONFIG="./agent-browser.json"  # Custom config file
 AGENT_BROWSER_CDP="9222"                     # Connect daemon to CDP port or WebSocket URL
 ```
+
+For cloud providers, `close`, daemon shutdown, and idle timeout release the provider-owned remote session.

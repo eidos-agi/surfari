@@ -1485,6 +1485,8 @@ agent-browser open https://example.com
 
 When enabled, agent-browser connects to a Browserbase session instead of launching a local browser. All commands work identically.
 
+Closing the browser explicitly releases the remote Browserbase session, including daemon shutdown and idle-timeout cleanup.
+
 Get your API key from the [Browserbase Dashboard](https://browserbase.com/overview).
 
 ### Browser Use

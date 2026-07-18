@@ -209,8 +209,7 @@ async fn run_socket_server(
                 let mut s = state.lock().await;
                 if let Some(ref mut mgr) = s.browser {
                     if mgr.has_process_exited() {
-                        let _ = mgr.close().await;
-                        s.browser = None;
+                        let _ = s.close_browser().await;
                         s.screencasting = false;
                         s.update_stream_client().await;
                     } else {
@@ -225,9 +224,7 @@ async fn run_socket_server(
                 }
             }, if idle_timeout_ms.is_some() => {
                 let mut s = state.lock().await;
-                if let Some(ref mut mgr) = s.browser {
-                    let _ = mgr.close().await;
-                }
+                let _ = s.close_browser().await;
                 break;
             }
             _ = reset_rx.recv(), if idle_timeout_ms.is_some() => {
@@ -243,9 +240,7 @@ async fn run_socket_server(
             }
             _ = shutdown_signal() => {
                 let mut s = state.lock().await;
-                if let Some(ref mut mgr) = s.browser {
-                    let _ = mgr.close().await;
-                }
+                let _ = s.close_browser().await;
                 break;
             }
         }
@@ -325,9 +320,7 @@ async fn run_socket_server(
                 }
             }, if idle_timeout_ms.is_some() => {
                 let mut s = state.lock().await;
-                if let Some(ref mut mgr) = s.browser {
-                    let _ = mgr.close().await;
-                }
+                let _ = s.close_browser().await;
                 let _ = fs::remove_file(&port_path);
                 break;
             }
@@ -342,9 +335,7 @@ async fn run_socket_server(
             }
             _ = shutdown_signal() => {
                 let mut s = state.lock().await;
-                if let Some(ref mut mgr) = s.browser {
-                    let _ = mgr.close().await;
-                }
+                let _ = s.close_browser().await;
                 let _ = fs::remove_file(&port_path);
                 break;
             }
