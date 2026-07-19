@@ -45,6 +45,9 @@ yarn.lock
 # Environment
 .env
 .env.local
+.env.*
+!.env.example
+!.env.*.example
 
 # Windows debug instance config
 scripts/windows-debug/.instance
@@ -67,15 +70,5 @@ docs/package-lock.json
 # next
 .next/
 out/
-
-# StepProof runtime state (machine-specific, ephemeral).
-# NOTE: .stepproof/ itself is TRACKED — the layout mirrors .visionlog/.
-# Only these child paths are runtime noise.
-.stepproof/sessions/
-.stepproof/audit-buffer.jsonl
-.stepproof/adapter-manifest.json
-.stepproof/runs/
-.stepproof/events.jsonl
-.stepproof/runtime.url
-.stepproof/active-run.json
+next-env.d.ts
 .shipr/

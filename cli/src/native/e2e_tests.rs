@@ -10,11 +10,14 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
 use futures_util::StreamExt;
 use serde_json::{json, Value};
+use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::test_utils::EnvGuard;
 
-use super::actions::{execute_command, DaemonState};
+use super::actions::{
+    close_current_browser, execute_command, maybe_autosave_restore_state, DaemonState,
+};
 
 fn assert_success(resp: &Value) {
     assert_eq!(
@@ -92,6 +95,63 @@ async fn create_storage_state_with_cookie(path: &str, cookie_name: &str, cookie_
 
     let resp = execute_command(&json!({ "id": "5", "action": "close" }), &mut state).await;
     assert_success(&resp);
+}
+
+async fn create_restore_state_with_cookie(
+    restore_key: &str,
+    cookie_name: &str,
+    cookie_value: &str,
+) {
+    let mut state = DaemonState::new();
+
+    let resp = execute_command(
+        &json!({
+            "id": "1",
+            "action": "navigate",
+            "url": "https://example.com",
+            "restoreKey": restore_key
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(
+        &json!({
+            "id": "2",
+            "action": "cookies_set",
+            "name": cookie_name,
+            "value": cookie_value,
+            "domain": ".example.com",
+            "path": "/",
+            "expires": 2000000000
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(&json!({ "id": "3", "action": "close" }), &mut state).await;
+    assert_success(&resp);
+    assert_eq!(get_data(&resp)["saveStatus"], "saved");
+}
+
+fn cleanup_restore_state_files(restore_key: &str) {
+    let Some(sessions_dir) = dirs::home_dir().map(|home| home.join(".agent-browser/sessions"))
+    else {
+        return;
+    };
+
+    if let Ok(entries) = std::fs::read_dir(&sessions_dir) {
+        for entry in entries.flatten() {
+            let fname = entry.file_name().to_string_lossy().to_string();
+            if fname.starts_with(&format!("{}-", restore_key)) {
+                let path = entry.path();
+                let _ = std::fs::remove_file(&path);
+                let _ = std::fs::remove_file(format!("{}.previous", path.to_string_lossy()));
+            }
+        }
+    }
 }
 
 async fn send_raw_http_request(port: u64, request: &str) -> String {
@@ -1560,6 +1620,48 @@ async fn e2e_wait() {
     assert_success(&resp);
 }
 
+// wait --load on a page that already finished loading must resolve
+// immediately instead of waiting for a Page.loadEventFired that will never
+// come (the common case after a click that triggers an SPA navigation).
+#[tokio::test]
+#[ignore]
+async fn e2e_wait_load_state_resolves_immediately_when_already_loaded() {
+    let mut state = DaemonState::new();
+
+    let resp = execute_command(
+        &json!({ "id": "1", "action": "launch", "headless": true }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(
+        &json!({ "id": "2", "action": "navigate", "url": "data:text/html,<h1>Loaded</h1>" }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    for (id, load_state) in [("3", "load"), ("4", "domcontentloaded")] {
+        let start = std::time::Instant::now();
+        let resp = execute_command(
+            &json!({ "id": id, "action": "waitforloadstate", "state": load_state, "timeout": 10000 }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+        assert!(
+            start.elapsed().as_millis() < 3000,
+            "wait --load {} on an already-loaded page should resolve immediately, took {}ms",
+            load_state,
+            start.elapsed().as_millis()
+        );
+    }
+
+    let resp = execute_command(&json!({ "id": "99", "action": "close" }), &mut state).await;
+    assert_success(&resp);
+}
+
 // ---------------------------------------------------------------------------
 // Same-document navigation regression test
 // ---------------------------------------------------------------------------
@@ -2394,6 +2496,68 @@ async fn e2e_domain_filter() {
     .await;
     assert_success(&resp);
 
+    // The active about:blank document must be patched immediately, not only
+    // after a later navigation.
+    let resp = execute_command(
+        &json!({
+            "id": "1-rtc", "action": "evaluate",
+            "script": "(() => { try { new RTCPeerConnection({iceServers:[{urls:'stun:secret.blocked.com:3478'}]}); return 'NOT_BLOCKED'; } catch (error) { return error.name; } })()",
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+    assert_eq!(get_data(&resp)["result"], "SecurityError");
+
+    // New tabs created after launch must receive the same controls before a
+    // requested URL starts loading.
+    let resp = execute_command(
+        &json!({ "id": "1-tab", "action": "tab_new", "url": "https://example.com" }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+    let resp = execute_command(
+        &json!({
+            "id": "1-tab-rtc", "action": "evaluate",
+            "script": "(() => { try { new RTCPeerConnection({iceServers:[{urls:'stun:secret.blocked.com:3478'}]}); return 'NOT_BLOCKED'; } catch (error) { return error.name; } })()",
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+    assert_eq!(get_data(&resp)["result"], "SecurityError");
+
+    let resp = execute_command(
+        &json!({ "id": "1-tab-blocked", "action": "tab_new", "url": "https://blocked.com" }),
+        &mut state,
+    )
+    .await;
+    assert_eq!(resp["success"], false);
+    let error = resp["error"].as_str().unwrap_or("");
+    assert!(
+        error.contains("blocked.com") || error.contains("not allowed"),
+        "Blocked tab URL should fail before loading, got: {}",
+        error
+    );
+
+    let resp = execute_command(
+        &json!({ "id": "1-window", "action": "window_new" }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+    let resp = execute_command(
+        &json!({
+            "id": "1-window-rtc", "action": "evaluate",
+            "script": "(() => { try { new RTCPeerConnection({iceServers:[{urls:'stun:secret.blocked.com:3478'}]}); return 'NOT_BLOCKED'; } catch (error) { return error.name; } })()",
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+    assert_eq!(get_data(&resp)["result"], "SecurityError");
+
     // Allowed domain
     let resp = execute_command(
         &json!({ "id": "2", "action": "navigate", "url": "https://example.com" }),
@@ -2444,8 +2608,668 @@ async fn e2e_domain_filter() {
         result,
     );
 
+    // WebRTC uses DNS and UDP outside CDP Fetch interception, so the domain
+    // filter must disable both Chromium constructor names before page scripts
+    // can create a peer connection.
+    let resp = execute_command(
+        &json!({
+            "id": "6", "action": "evaluate",
+            "script": "['RTCPeerConnection','webkitRTCPeerConnection'].filter(name => typeof window[name] === 'function').map(name => { try { new window[name]({iceServers:[{urls:'stun:secret.blocked.com:3478'}]}); return name + ':NOT_BLOCKED'; } catch (error) { return name + ':' + error.name; } })",
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+    let results = get_data(&resp)["result"].as_array().unwrap();
+    assert!(
+        !results.is_empty(),
+        "RTCPeerConnection should be available in Chrome"
+    );
+    assert!(
+        results.iter().all(|result| result
+            .as_str()
+            .is_some_and(|value| value.ends_with(":SecurityError"))),
+        "Every peer connection constructor should be blocked, got: {:?}",
+        results,
+    );
+
     let resp = execute_command(&json!({ "id": "99", "action": "close" }), &mut state).await;
     assert_success(&resp);
+}
+
+#[tokio::test]
+#[ignore]
+async fn e2e_domain_filter_blocks_page_created_popup_before_first_request() {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let requests = Arc::new(Mutex::new(Vec::<String>::new()));
+    let requests_for_server = requests.clone();
+    let server = tokio::spawn(async move {
+        for _ in 0..20 {
+            let Ok((mut stream, _)) = listener.accept().await else {
+                break;
+            };
+            let requests = requests_for_server.clone();
+            tokio::spawn(async move {
+                let mut buf = vec![0u8; 8192];
+                let n = stream.read(&mut buf).await.unwrap_or(0);
+                let request = String::from_utf8_lossy(&buf[..n]);
+                let request_line = request.lines().next().unwrap_or("").to_string();
+                if let Ok(mut logged) = requests.lock() {
+                    logged.push(request_line);
+                }
+
+                let body = "<!doctype html><title>allowed</title><button id=\"go\">go</button>";
+                let response = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    body.len(),
+                    body,
+                );
+                let _ = stream.write_all(response.as_bytes()).await;
+                let _ = stream.flush().await;
+            });
+        }
+    });
+
+    let mut state = DaemonState::new();
+    {
+        let mut df = state.domain_filter.write().await;
+        *df = Some(super::network::DomainFilter::new("localhost"));
+    }
+
+    let resp = execute_command(
+        &json!({ "id": "1", "action": "launch", "headless": true }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(
+        &json!({
+            "id": "2",
+            "action": "navigate",
+            "url": format!("http://localhost:{}/", port),
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(
+        &json!({
+            "id": "3",
+            "action": "evaluate",
+            "script": format!("window.open('http://127.0.0.1:{}/leak'); 'done'", port),
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    let logged = requests.lock().unwrap().clone();
+    assert!(
+        !logged.iter().any(|line| line.contains(" /leak ")),
+        "Blocked popup made a server request: {:?}",
+        logged
+    );
+
+    let resp = execute_command(&json!({ "id": "99", "action": "close" }), &mut state).await;
+    assert_success(&resp);
+    server.abort();
+}
+
+#[tokio::test]
+#[ignore]
+async fn e2e_domain_filter_blocks_service_worker_requests() {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let requests = Arc::new(Mutex::new(Vec::<String>::new()));
+    let requests_for_server = requests.clone();
+    let server = tokio::spawn(async move {
+        for _ in 0..20 {
+            let Ok((mut stream, _)) = listener.accept().await else {
+                break;
+            };
+            let requests = requests_for_server.clone();
+            tokio::spawn(async move {
+                let mut buf = vec![0u8; 8192];
+                let n = stream.read(&mut buf).await.unwrap_or(0);
+                let request = String::from_utf8_lossy(&buf[..n]);
+                let request_line = request.lines().next().unwrap_or("").to_string();
+                if let Ok(mut logged) = requests.lock() {
+                    logged.push(request_line.clone());
+                }
+                let path = request_line.split_whitespace().nth(1).unwrap_or("/");
+
+                let (content_type, body) = if path == "/sw.js" {
+                    (
+                        "application/javascript",
+                        format!(
+                            r#"self.addEventListener('message', event => {{
+    event.source && event.source.postMessage('started');
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 500);
+    fetch('http://127.0.0.1:{}/leak', {{ mode: 'no-cors', signal: controller.signal }})
+        .then(() => event.source && event.source.postMessage('leaked'))
+        .catch(error => event.source && event.source.postMessage('blocked:' + error.name));
+}});"#,
+                            port
+                        ),
+                    )
+                } else {
+                    (
+                        "text/html",
+                        r#"<!doctype html><title>allowed</title><script>
+window.swResult = 'pending';
+navigator.serviceWorker.register('/sw.js').then(async reg => {
+    await navigator.serviceWorker.ready;
+    const sw = reg.active || reg.waiting || reg.installing;
+    navigator.serviceWorker.addEventListener('message', event => {
+        window.swResult = event.data;
+    });
+    sw.postMessage('go');
+}).catch(error => {
+    window.swResult = 'register:' + error.name;
+});
+</script>"#
+                            .to_string(),
+                    )
+                };
+
+                let response = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    content_type,
+                    body.len(),
+                    body,
+                );
+                let _ = stream.write_all(response.as_bytes()).await;
+                let _ = stream.flush().await;
+            });
+        }
+    });
+
+    let mut state = DaemonState::new();
+    {
+        let mut df = state.domain_filter.write().await;
+        *df = Some(super::network::DomainFilter::new("localhost"));
+    }
+
+    let resp = execute_command(
+        &json!({ "id": "1", "action": "launch", "headless": true }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(
+        &json!({
+            "id": "2",
+            "action": "navigate",
+            "url": format!("http://localhost:{}/", port),
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let mut sw_result = "pending".to_string();
+    for _ in 0..50 {
+        let resp = execute_command(
+            &json!({
+                "id": "3",
+                "action": "evaluate",
+                "script": "window.swResult || 'pending'",
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+        sw_result = get_data(&resp)["result"]
+            .as_str()
+            .unwrap_or("pending")
+            .to_string();
+        if !matches!(sw_result.as_str(), "pending" | "started") {
+            break;
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    }
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    let logged = requests.lock().unwrap().clone();
+    let resp = execute_command(&json!({ "id": "99", "action": "close" }), &mut state).await;
+    assert_success(&resp);
+    server.abort();
+
+    assert!(
+        sw_result.starts_with("blocked:"),
+        "Service worker request should be blocked, got: {}",
+        sw_result
+    );
+    assert!(
+        !logged.iter().any(|line| line.contains(" /leak ")),
+        "Blocked service worker request reached the server: {:?}",
+        logged
+    );
+}
+
+#[tokio::test]
+#[ignore]
+async fn e2e_domain_filter_blocks_worker_websocket_requests() {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let requests = Arc::new(Mutex::new(Vec::<String>::new()));
+    let requests_for_server = requests.clone();
+    let server = tokio::spawn(async move {
+        for _ in 0..20 {
+            let Ok((mut stream, _)) = listener.accept().await else {
+                break;
+            };
+            let requests = requests_for_server.clone();
+            tokio::spawn(async move {
+                let mut buf = vec![0u8; 8192];
+                let n = stream.read(&mut buf).await.unwrap_or(0);
+                let request = String::from_utf8_lossy(&buf[..n]);
+                let request_line = request.lines().next().unwrap_or("").to_string();
+                if let Ok(mut logged) = requests.lock() {
+                    logged.push(request_line.clone());
+                }
+                let path = request_line.split_whitespace().nth(1).unwrap_or("/");
+
+                let (content_type, body) = if path == "/worker.js" {
+                    (
+                        "application/javascript",
+                        format!(
+                            r#"self.addEventListener('message', async () => {{
+    try {{
+        const response = await fetch('/worker-ping');
+        const text = await response.text();
+        if (text !== 'pong') {{
+            self.postMessage('fetch:' + text);
+            return;
+        }}
+    }} catch (error) {{
+        self.postMessage('fetch-error:' + error.name);
+        return;
+    }}
+
+    try {{
+        const ws = new WebSocket('ws://127.0.0.1:{}/leak');
+        ws.onopen = () => self.postMessage('leaked');
+        ws.onerror = () => self.postMessage('blocked:error');
+    }} catch (error) {{
+        self.postMessage('blocked:' + error.name);
+    }}
+}});"#,
+                            port
+                        ),
+                    )
+                } else if path == "/worker-ping" {
+                    ("text/plain", "pong".to_string())
+                } else {
+                    (
+                        "text/html",
+                        r#"<!doctype html><title>allowed</title><script>
+window.workerWsResult = 'pending';
+const worker = new Worker('/worker.js');
+worker.onmessage = event => {
+    window.workerWsResult = event.data;
+};
+worker.onerror = () => {
+    window.workerWsResult = 'worker:error';
+};
+worker.postMessage('go');
+</script>"#
+                            .to_string(),
+                    )
+                };
+
+                let response = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    content_type,
+                    body.len(),
+                    body,
+                );
+                let _ = stream.write_all(response.as_bytes()).await;
+                let _ = stream.flush().await;
+            });
+        }
+    });
+
+    let mut state = DaemonState::new();
+    {
+        let mut df = state.domain_filter.write().await;
+        *df = Some(super::network::DomainFilter::new("localhost"));
+    }
+
+    let resp = execute_command(
+        &json!({ "id": "1", "action": "launch", "headless": true }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(
+        &json!({
+            "id": "2",
+            "action": "navigate",
+            "url": format!("http://localhost:{}/", port),
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let mut worker_result = "pending".to_string();
+    for _ in 0..50 {
+        let resp = execute_command(
+            &json!({
+                "id": "3",
+                "action": "evaluate",
+                "script": "window.workerWsResult || 'pending'",
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+        worker_result = get_data(&resp)["result"]
+            .as_str()
+            .unwrap_or("pending")
+            .to_string();
+        if worker_result != "pending" {
+            break;
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    }
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    let logged = requests.lock().unwrap().clone();
+    let resp = execute_command(&json!({ "id": "99", "action": "close" }), &mut state).await;
+    assert_success(&resp);
+    server.abort();
+
+    assert!(
+        worker_result.starts_with("blocked:"),
+        "Worker WebSocket should be blocked, got: {}",
+        worker_result
+    );
+    assert!(
+        !logged.iter().any(|line| line.contains(" /leak ")),
+        "Blocked worker WebSocket reached the server: {:?}",
+        logged
+    );
+}
+
+#[tokio::test]
+#[ignore]
+async fn e2e_domain_filter_blocks_csp_self_worker_fallback() {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let requests = Arc::new(Mutex::new(Vec::<String>::new()));
+    let requests_for_server = requests.clone();
+    let server = tokio::spawn(async move {
+        for _ in 0..20 {
+            let Ok((mut stream, _)) = listener.accept().await else {
+                break;
+            };
+            let requests = requests_for_server.clone();
+            tokio::spawn(async move {
+                let mut buf = vec![0u8; 8192];
+                let n = stream.read(&mut buf).await.unwrap_or(0);
+                let request = String::from_utf8_lossy(&buf[..n]);
+                let request_line = request.lines().next().unwrap_or("").to_string();
+                if let Ok(mut logged) = requests.lock() {
+                    logged.push(request_line.clone());
+                }
+                let path = request_line.split_whitespace().nth(1).unwrap_or("/");
+
+                let (content_type, body, csp) = if path == "/worker.js" {
+                    (
+                        "application/javascript",
+                        format!(
+                            r#"self.addEventListener('message', async () => {{
+    try {{
+        const response = await fetch('/worker-ping');
+        const text = await response.text();
+        try {{
+            await fetch('http://127.0.0.1:{}/leak', {{ mode: 'no-cors' }});
+            self.postMessage('leaked');
+        }} catch (error) {{
+            self.postMessage('started:' + text + ';blocked:' + error.name);
+        }}
+    }} catch (error) {{
+        self.postMessage('blocked:' + error.name);
+    }}
+}});"#,
+                            port
+                        ),
+                        None,
+                    )
+                } else if path == "/worker-ping" {
+                    ("text/plain", "pong".to_string(), None)
+                } else {
+                    (
+                        "text/html",
+                        r#"<!doctype html><title>allowed</title><script>
+window.workerCspResult = 'pending';
+const worker = new Worker('/worker.js');
+worker.onmessage = event => {
+    window.workerCspResult = event.data;
+};
+worker.onerror = () => {
+    window.workerCspResult = 'worker:error';
+};
+worker.postMessage('go');
+</script>"#
+                            .to_string(),
+                        Some("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; worker-src 'self'\r\n"),
+                    )
+                };
+
+                let response = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: {}\r\n{}Content-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    content_type,
+                    csp.unwrap_or(""),
+                    body.len(),
+                    body,
+                );
+                let _ = stream.write_all(response.as_bytes()).await;
+                let _ = stream.flush().await;
+            });
+        }
+    });
+
+    let mut state = DaemonState::new();
+    {
+        let mut df = state.domain_filter.write().await;
+        *df = Some(super::network::DomainFilter::new("localhost"));
+    }
+
+    let resp = execute_command(
+        &json!({ "id": "1", "action": "launch", "headless": true }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(
+        &json!({
+            "id": "2",
+            "action": "navigate",
+            "url": format!("http://localhost:{}/", port),
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let mut worker_result = "pending".to_string();
+    for _ in 0..50 {
+        let resp = execute_command(
+            &json!({
+                "id": "3",
+                "action": "evaluate",
+                "script": "window.workerCspResult || 'pending'",
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+        worker_result = get_data(&resp)["result"]
+            .as_str()
+            .unwrap_or("pending")
+            .to_string();
+        if worker_result != "pending" {
+            break;
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    }
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    let logged = requests.lock().unwrap().clone();
+    let resp = execute_command(&json!({ "id": "99", "action": "close" }), &mut state).await;
+    assert_success(&resp);
+    server.abort();
+
+    assert_eq!(
+        worker_result, "worker:error",
+        "CSP-blocked worker bootstrap must fail closed instead of running an unguarded worker"
+    );
+    assert!(
+        !logged.iter().any(|line| line.contains(" /leak ")),
+        "Blocked CSP fallback worker request reached the server: {:?}",
+        logged
+    );
+}
+
+#[tokio::test]
+#[ignore]
+async fn e2e_domain_filter_blocks_module_worker_top_level_requests() {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let requests = Arc::new(Mutex::new(Vec::<String>::new()));
+    let requests_for_server = requests.clone();
+    let server = tokio::spawn(async move {
+        for _ in 0..20 {
+            let Ok((mut stream, _)) = listener.accept().await else {
+                break;
+            };
+            let requests = requests_for_server.clone();
+            tokio::spawn(async move {
+                let mut buf = vec![0u8; 8192];
+                let n = stream.read(&mut buf).await.unwrap_or(0);
+                let request = String::from_utf8_lossy(&buf[..n]);
+                let request_line = request.lines().next().unwrap_or("").to_string();
+                if let Ok(mut logged) = requests.lock() {
+                    logged.push(request_line.clone());
+                }
+                let path = request_line.split_whitespace().nth(1).unwrap_or("/");
+
+                let (content_type, body) = if path == "/module-worker.js" {
+                    (
+                        "application/javascript",
+                        format!(
+                            r#"try {{
+    await fetch('http://127.0.0.1:{}/leak', {{ mode: 'no-cors' }});
+    self.postMessage('leaked');
+}} catch (error) {{
+    self.postMessage('blocked:' + error.name);
+}}"#,
+                            port
+                        ),
+                    )
+                } else {
+                    (
+                        "text/html",
+                        r#"<!doctype html><title>allowed</title><script>
+window.moduleWorkerResult = 'pending';
+const worker = new Worker('/module-worker.js', { type: 'module' });
+worker.onmessage = event => {
+    window.moduleWorkerResult = event.data;
+};
+worker.onerror = () => {
+    window.moduleWorkerResult = 'worker:error';
+};
+</script>"#
+                            .to_string(),
+                    )
+                };
+
+                let response = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    content_type,
+                    body.len(),
+                    body,
+                );
+                let _ = stream.write_all(response.as_bytes()).await;
+                let _ = stream.flush().await;
+            });
+        }
+    });
+
+    let mut state = DaemonState::new();
+    {
+        let mut df = state.domain_filter.write().await;
+        *df = Some(super::network::DomainFilter::new("localhost"));
+    }
+
+    let resp = execute_command(
+        &json!({ "id": "1", "action": "launch", "headless": true }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(
+        &json!({
+            "id": "2",
+            "action": "navigate",
+            "url": format!("http://localhost:{}/", port),
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let mut worker_result = "pending".to_string();
+    for _ in 0..50 {
+        let resp = execute_command(
+            &json!({
+                "id": "3",
+                "action": "evaluate",
+                "script": "window.moduleWorkerResult || 'pending'",
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+        worker_result = get_data(&resp)["result"]
+            .as_str()
+            .unwrap_or("pending")
+            .to_string();
+        if worker_result != "pending" {
+            break;
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    }
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    let logged = requests.lock().unwrap().clone();
+    let resp = execute_command(&json!({ "id": "99", "action": "close" }), &mut state).await;
+    assert_success(&resp);
+    server.abort();
+
+    assert!(
+        worker_result.starts_with("blocked:"),
+        "Module worker top-level request should be blocked, got: {}",
+        worker_result
+    );
+    assert!(
+        !logged.iter().any(|line| line.contains(" /leak ")),
+        "Blocked module worker request reached the server: {:?}",
+        logged
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -2697,6 +3521,89 @@ async fn e2e_error_handling() {
     .await;
     assert_eq!(resp["success"], false);
     assert!(resp["error"].as_str().unwrap().contains("error"));
+
+    let resp = execute_command(&json!({ "id": "99", "action": "close" }), &mut state).await;
+    assert_success(&resp);
+}
+
+#[tokio::test]
+#[ignore]
+async fn e2e_click_reports_covering_overlay() {
+    let mut state = DaemonState::new();
+
+    let resp = execute_command(
+        &json!({ "id": "1", "action": "launch", "headless": true }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let html = r#"
+        <html>
+        <body>
+            <button id="target" onclick="document.getElementById('result').textContent = 'clicked'">
+                Target
+            </button>
+            <div id="consent-banner" style="position:fixed;inset:0;z-index:10;background:rgba(0,0,0,0.1)">
+                <button id="dismiss" style="position:absolute;right:20px;bottom:20px"
+                    onclick="document.getElementById('consent-banner').remove()">
+                    Dismiss
+                </button>
+            </div>
+            <div id="result">idle</div>
+        </body>
+        </html>
+    "#;
+    let url = format!("data:text/html;base64,{}", STANDARD.encode(html));
+    let resp = execute_command(
+        &json!({ "id": "2", "action": "navigate", "url": url }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(
+        &json!({ "id": "3", "action": "click", "selector": "#target" }),
+        &mut state,
+    )
+    .await;
+    assert_eq!(resp["success"], false, "covered target should fail: {resp}");
+    let error = resp["error"].as_str().unwrap_or_default();
+    assert!(
+        error.contains("covered by <div#consent-banner>"),
+        "unexpected covered-click error: {}",
+        error
+    );
+
+    let resp = execute_command(
+        &json!({ "id": "4", "action": "gettext", "selector": "#result" }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+    assert_eq!(get_data(&resp)["text"], "idle");
+
+    let resp = execute_command(
+        &json!({ "id": "5", "action": "click", "selector": "#dismiss" }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(
+        &json!({ "id": "6", "action": "click", "selector": "#target" }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(
+        &json!({ "id": "7", "action": "gettext", "selector": "#result" }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+    assert_eq!(get_data(&resp)["text"], "clicked");
 
     let resp = execute_command(&json!({ "id": "99", "action": "close" }), &mut state).await;
     assert_success(&resp);
@@ -3493,6 +4400,58 @@ async fn start_echo_server() -> (String, tokio::task::JoinHandle<()>) {
                     "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\
                      Access-Control-Allow-Origin: *\r\nContent-Length: {}\r\n\
                      Connection: close\r\n\r\n{}",
+                    body.len(),
+                    body,
+                );
+                let _ = stream.write_all(response.as_bytes()).await;
+                let _ = stream.flush().await;
+            });
+        }
+    });
+
+    (base_url, handle)
+}
+
+/// Starts a tiny cookie-gated app that behaves like a Next dev target with
+/// cookie-backed login state.
+async fn start_cookie_login_server() -> (String, tokio::task::JoinHandle<()>) {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let base_url = format!("http://127.0.0.1:{}", port);
+
+    let handle = tokio::spawn(async move {
+        for _ in 0..100 {
+            let Ok((mut stream, _)) = listener.accept().await else {
+                break;
+            };
+
+            tokio::spawn(async move {
+                let mut buf = vec![0u8; 8192];
+                let n = stream.read(&mut buf).await.unwrap_or(0);
+                let request = String::from_utf8_lossy(&buf[..n]);
+                let request_line = request.lines().next().unwrap_or_default();
+                let path = request_line.split_whitespace().nth(1).unwrap_or("/");
+                let has_auth_cookie = request.lines().any(|line| {
+                    line.to_ascii_lowercase().starts_with("cookie:")
+                        && line.contains("next_dev_loop_auth=1")
+                });
+
+                let mut headers = vec!["Content-Type: text/html".to_string()];
+                let body = if path.starts_with("/login") {
+                    headers.push(
+                        "Set-Cookie: next_dev_loop_auth=1; Path=/; Max-Age=3600; SameSite=Lax"
+                            .to_string(),
+                    );
+                    "<!doctype html><title>Logged in</title><main>Login complete</main>".to_string()
+                } else if has_auth_cookie {
+                    "<!doctype html><title>Home</title><main>Welcome back</main>".to_string()
+                } else {
+                    "<!doctype html><title>Home</title><main>Please sign in</main>".to_string()
+                };
+
+                let response = format!(
+                    "HTTP/1.1 200 OK\r\n{}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    headers.join("\r\n"),
                     body.len(),
                     body,
                 );
@@ -5101,11 +6060,7 @@ async fn e2e_session_name_auto_restores_cookies() {
     }
 
     // Session 2: fresh DaemonState with same session_name. Navigate without
-    // explicit launch — this triggers auto_launch which calls
-    // try_auto_restore_state.
-    //
-    // NOTE: an explicit `launch` command skips auto_launch entirely, so
-    // session-name auto-restore only fires via the auto_launch path.
+    // explicit launch, which triggers auto_launch and restore.
     {
         let mut state = DaemonState::new();
 
@@ -5150,6 +6105,585 @@ async fn e2e_session_name_auto_restores_cookies() {
             }
         }
     }
+}
+
+#[tokio::test]
+#[ignore]
+async fn e2e_restore_loads_during_explicit_launch_before_navigation() {
+    let restore_key = format!(
+        "e2e-explicit-restore-{}",
+        &uuid::Uuid::new_v4().to_string()[..8]
+    );
+    let env = EnvGuard::new(&[
+        "AGENT_BROWSER_SESSION_NAME",
+        "AGENT_BROWSER_RESTORE_SAVE",
+        "AGENT_BROWSER_STATE",
+        "AGENT_BROWSER_ENCRYPTION_KEY",
+    ]);
+    env.remove("AGENT_BROWSER_SESSION_NAME");
+    env.remove("AGENT_BROWSER_RESTORE_SAVE");
+    env.remove("AGENT_BROWSER_STATE");
+    env.remove("AGENT_BROWSER_ENCRYPTION_KEY");
+
+    {
+        let mut state = DaemonState::new();
+        let resp = execute_command(
+            &json!({
+                "id": "1",
+                "action": "launch",
+                "headless": true,
+                "restoreKey": restore_key
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+
+        let resp = execute_command(
+            &json!({ "id": "2", "action": "navigate", "url": "https://example.com" }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+
+        let resp = execute_command(
+            &json!({
+                "id": "3",
+                "action": "cookies_set",
+                "name": "explicit_restore_test",
+                "value": "loaded_before_navigation",
+                "domain": ".example.com",
+                "path": "/",
+                "expires": 2000000000
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+
+        let resp = execute_command(&json!({ "id": "4", "action": "close" }), &mut state).await;
+        assert_success(&resp);
+        assert_eq!(get_data(&resp)["saveStatus"], "saved");
+    }
+
+    let path = super::state::find_auto_state_file(&restore_key)
+        .expect("first close should create restore state");
+
+    {
+        let mut state = DaemonState::new();
+        let resp = execute_command(
+            &json!({
+                "id": "10",
+                "action": "launch",
+                "headless": true,
+                "restoreKey": restore_key
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+        assert_eq!(get_data(&resp)["lifecycle"]["restoreStatus"], "loaded");
+
+        let resp = execute_command(
+            &json!({ "id": "11", "action": "navigate", "url": "https://example.com" }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+
+        let resp =
+            execute_command(&json!({ "id": "12", "action": "cookies_get" }), &mut state).await;
+        assert_success(&resp);
+        let cookies = get_data(&resp)["cookies"].as_array().unwrap();
+        let found = cookies.iter().any(|c| {
+            c["name"] == "explicit_restore_test" && c["value"] == "loaded_before_navigation"
+        });
+        assert!(
+            found,
+            "Cookie should be restored by explicit launch before first navigation. Cookies found: {:?}",
+            cookies
+                .iter()
+                .map(|c| c["name"].as_str().unwrap_or("?"))
+                .collect::<Vec<_>>()
+        );
+
+        let resp = execute_command(&json!({ "id": "99", "action": "close" }), &mut state).await;
+        assert_success(&resp);
+    }
+
+    let _ = std::fs::remove_file(&path);
+    let _ = std::fs::remove_file(format!("{}.previous", path));
+}
+
+/// Verify that periodic autosave persists session state while the browser is
+/// open, so state survives the browser dying WITHOUT the daemon's
+/// save-on-close path running (e.g. the user closes the window by hand).
+#[tokio::test]
+#[ignore]
+async fn e2e_periodic_autosave_survives_abrupt_browser_exit() {
+    let restore_key = format!(
+        "e2e-autosave-abrupt-{}",
+        &uuid::Uuid::new_v4().to_string()[..8]
+    );
+    let env = EnvGuard::new(&[
+        "AGENT_BROWSER_SESSION_NAME",
+        "AGENT_BROWSER_RESTORE_SAVE",
+        "AGENT_BROWSER_STATE",
+        "AGENT_BROWSER_ENCRYPTION_KEY",
+    ]);
+    env.remove("AGENT_BROWSER_SESSION_NAME");
+    env.remove("AGENT_BROWSER_RESTORE_SAVE");
+    env.remove("AGENT_BROWSER_STATE");
+    env.remove("AGENT_BROWSER_ENCRYPTION_KEY");
+
+    {
+        let mut state = DaemonState::new();
+        let resp = execute_command(
+            &json!({
+                "id": "1",
+                "action": "launch",
+                "headless": true,
+                "restoreKey": restore_key
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+
+        let resp = execute_command(
+            &json!({ "id": "2", "action": "navigate", "url": "https://example.com" }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+
+        let resp = execute_command(
+            &json!({
+                "id": "3",
+                "action": "cookies_set",
+                "name": "autosave_test",
+                "value": "saved_by_tick",
+                "domain": ".example.com",
+                "path": "/",
+                "expires": 2000000000
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+
+        // The command just finished, so the quiet period must block the tick.
+        maybe_autosave_restore_state(&mut state, 30_000).await;
+        assert_eq!(state.restore_save_status, "not_attempted");
+        assert!(
+            super::state::find_auto_state_file(&restore_key).is_none(),
+            "autosave must not fire inside the post-command quiet period"
+        );
+
+        // Simulate the quiet period having elapsed, then run the tick again.
+        state.last_command_finished =
+            std::time::Instant::now().checked_sub(std::time::Duration::from_secs(10));
+        maybe_autosave_restore_state(&mut state, 30_000).await;
+        assert_eq!(state.restore_save_status, "saved");
+        assert!(
+            state.last_autosave_attempt.is_some(),
+            "successful save should reset the periodic interval"
+        );
+        assert!(
+            super::state::find_auto_state_file(&restore_key).is_some(),
+            "periodic autosave should write the session state file"
+        );
+
+        // An idle session stays eligible: once the interval elapses again the
+        // tick re-saves, capturing page-driven mutations like token refreshes.
+        state.last_autosave_attempt =
+            std::time::Instant::now().checked_sub(std::time::Duration::from_secs(31));
+        state.restore_save_status = "not_attempted".to_string();
+        maybe_autosave_restore_state(&mut state, 30_000).await;
+        assert_eq!(
+            state.restore_save_status, "saved",
+            "idle session should be re-saved on the next interval without new commands"
+        );
+
+        // Kill the browser out from under the daemon, the way a user closing
+        // the window does: the process exits and CDP dies, so no further save
+        // is possible. Then mimic the daemon drain tick, which only closes.
+        let mgr = state.browser.as_mut().expect("browser should be running");
+        let _ = mgr
+            .client
+            .send_command_no_params("Browser.close", None)
+            .await;
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        while !mgr.has_process_exited() && std::time::Instant::now() < deadline {
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        }
+        assert!(
+            state
+                .browser
+                .as_mut()
+                .expect("browser manager should still be present")
+                .has_process_exited(),
+            "browser process should have exited after Browser.close"
+        );
+        let _ = close_current_browser(&mut state).await;
+    }
+
+    let path = super::state::find_auto_state_file(&restore_key)
+        .expect("autosaved state should survive the abrupt browser exit");
+
+    {
+        let mut state = DaemonState::new();
+        let resp = execute_command(
+            &json!({
+                "id": "10",
+                "action": "launch",
+                "headless": true,
+                "restoreKey": restore_key
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+        assert_eq!(get_data(&resp)["lifecycle"]["restoreStatus"], "loaded");
+
+        let resp = execute_command(
+            &json!({ "id": "11", "action": "navigate", "url": "https://example.com" }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+
+        let resp =
+            execute_command(&json!({ "id": "12", "action": "cookies_get" }), &mut state).await;
+        assert_success(&resp);
+        let cookies = get_data(&resp)["cookies"].as_array().unwrap();
+        let found = cookies
+            .iter()
+            .any(|c| c["name"] == "autosave_test" && c["value"] == "saved_by_tick");
+        assert!(
+            found,
+            "Cookie saved only by periodic autosave should be restored after the browser was killed without a graceful close. Cookies found: {:?}",
+            cookies
+                .iter()
+                .map(|c| c["name"].as_str().unwrap_or("?"))
+                .collect::<Vec<_>>()
+        );
+
+        let resp = execute_command(&json!({ "id": "99", "action": "close" }), &mut state).await;
+        assert_success(&resp);
+    }
+
+    let _ = std::fs::remove_file(&path);
+    let _ = std::fs::remove_file(format!("{}.previous", path));
+}
+
+#[tokio::test]
+#[ignore]
+async fn e2e_restore_preserves_cookie_login_after_close_and_reopen() {
+    let restore_key = format!(
+        "e2e-next-cookie-login-{}",
+        &uuid::Uuid::new_v4().to_string()[..8]
+    );
+    let env = EnvGuard::new(&[
+        "AGENT_BROWSER_SESSION_NAME",
+        "AGENT_BROWSER_RESTORE_SAVE",
+        "AGENT_BROWSER_STATE",
+        "AGENT_BROWSER_ENCRYPTION_KEY",
+    ]);
+    env.remove("AGENT_BROWSER_SESSION_NAME");
+    env.remove("AGENT_BROWSER_RESTORE_SAVE");
+    env.remove("AGENT_BROWSER_STATE");
+    env.remove("AGENT_BROWSER_ENCRYPTION_KEY");
+
+    let (base_url, _server) = start_cookie_login_server().await;
+
+    {
+        let mut state = DaemonState::new();
+
+        let resp = execute_command(
+            &json!({
+                "id": "1",
+                "action": "navigate",
+                "url": base_url.clone(),
+                "restoreKey": restore_key
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+        assert_eq!(get_data(&resp)["lifecycle"]["restoreStatus"], "missing");
+
+        let resp = execute_command(
+            &json!({ "id": "2", "action": "evaluate", "script": "document.body.innerText" }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+        assert!(
+            get_data(&resp)["result"]
+                .as_str()
+                .unwrap_or_default()
+                .contains("Please sign in"),
+            "first homepage load should be logged out: {}",
+            resp
+        );
+
+        let resp = execute_command(
+            &json!({
+                "id": "3",
+                "action": "navigate",
+                "url": format!("{}/login", base_url),
+                "restoreKey": restore_key
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+
+        let resp = execute_command(
+            &json!({
+                "id": "4",
+                "action": "navigate",
+                "url": base_url.clone(),
+                "restoreKey": restore_key
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+
+        let resp = execute_command(
+            &json!({ "id": "5", "action": "evaluate", "script": "document.body.innerText" }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+        assert!(
+            get_data(&resp)["result"]
+                .as_str()
+                .unwrap_or_default()
+                .contains("Welcome back"),
+            "login route should set cookie for current browser: {}",
+            resp
+        );
+
+        let resp = execute_command(&json!({ "id": "6", "action": "close" }), &mut state).await;
+        assert_success(&resp);
+        assert_eq!(get_data(&resp)["saveStatus"], "saved");
+    }
+
+    let path = super::state::find_auto_state_file(&restore_key)
+        .expect("close should save cookie-backed restore state");
+
+    {
+        let mut state = DaemonState::new();
+        let resp = execute_command(
+            &json!({
+                "id": "10",
+                "action": "navigate",
+                "url": base_url.clone(),
+                "restoreKey": restore_key
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+        assert_eq!(get_data(&resp)["lifecycle"]["restoreStatus"], "loaded");
+
+        let resp = execute_command(
+            &json!({ "id": "11", "action": "evaluate", "script": "document.body.innerText" }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+        assert!(
+            get_data(&resp)["result"]
+                .as_str()
+                .unwrap_or_default()
+                .contains("Welcome back"),
+            "reopened session should keep cookie login on homepage: {}",
+            resp
+        );
+
+        let resp = execute_command(&json!({ "id": "99", "action": "close" }), &mut state).await;
+        assert_success(&resp);
+    }
+
+    let _ = std::fs::remove_file(&path);
+    let _ = std::fs::remove_file(format!("{}.previous", path));
+    cleanup_restore_state_files(&restore_key);
+}
+
+#[tokio::test]
+#[ignore]
+async fn e2e_restore_validation_failure_does_not_overwrite_state() {
+    let restore_key = format!(
+        "e2e-restore-validation-{}",
+        &uuid::Uuid::new_v4().to_string()[..8]
+    );
+
+    {
+        let mut state = DaemonState::new();
+        let resp = execute_command(
+            &json!({
+                "id": "1",
+                "action": "navigate",
+                "url": "https://example.com",
+                "restoreKey": restore_key
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+
+        let resp = execute_command(
+            &json!({
+                "id": "2",
+                "action": "cookies_set",
+                "name": "restore_validation_test",
+                "value": "known_good",
+                "domain": ".example.com",
+                "path": "/",
+                "expires": 2000000000
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+
+        let resp = execute_command(&json!({ "id": "3", "action": "close" }), &mut state).await;
+        assert_success(&resp);
+        assert_eq!(get_data(&resp)["saveStatus"], "saved");
+    }
+
+    let path = super::state::find_auto_state_file(&restore_key)
+        .expect("first close should create restore state");
+    let before = std::fs::read_to_string(&path).expect("state file should be readable");
+
+    {
+        let mut state = DaemonState::new();
+        let resp = execute_command(
+            &json!({
+                "id": "10",
+                "action": "navigate",
+                "url": "https://example.com",
+                "restoreKey": restore_key,
+                "restoreCheckText": "text-that-does-not-exist-in-the-page"
+            }),
+            &mut state,
+        )
+        .await;
+        assert_success(&resp);
+        assert_eq!(
+            get_data(&resp)["lifecycle"]["restoreStatus"],
+            "loaded_but_invalid"
+        );
+
+        let resp = execute_command(&json!({ "id": "11", "action": "close" }), &mut state).await;
+        assert_success(&resp);
+        assert_eq!(get_data(&resp)["saveStatus"], "skipped_restore_failed");
+    }
+
+    let after = std::fs::read_to_string(&path).expect("state file should still be readable");
+    assert_eq!(
+        before, after,
+        "failed restore validation must not overwrite previous state"
+    );
+
+    let _ = std::fs::remove_file(&path);
+    let _ = std::fs::remove_file(format!("{}.previous", path));
+}
+
+#[tokio::test]
+#[ignore]
+async fn e2e_restore_key_switch_reloads_instead_of_reusing_live_browser() {
+    let restore_key_a = format!(
+        "e2e-restore-switch-a-{}",
+        &uuid::Uuid::new_v4().to_string()[..8]
+    );
+    let restore_key_b = format!(
+        "e2e-restore-switch-b-{}",
+        &uuid::Uuid::new_v4().to_string()[..8]
+    );
+    let cookie_name = "restore_switch_test";
+    let env = EnvGuard::new(&[
+        "AGENT_BROWSER_SESSION_NAME",
+        "AGENT_BROWSER_RESTORE_SAVE",
+        "AGENT_BROWSER_STATE",
+        "AGENT_BROWSER_ENCRYPTION_KEY",
+    ]);
+    env.remove("AGENT_BROWSER_SESSION_NAME");
+    env.remove("AGENT_BROWSER_RESTORE_SAVE");
+    env.remove("AGENT_BROWSER_STATE");
+    env.remove("AGENT_BROWSER_ENCRYPTION_KEY");
+
+    create_restore_state_with_cookie(&restore_key_a, cookie_name, "value-a").await;
+    create_restore_state_with_cookie(&restore_key_b, cookie_name, "value-b").await;
+
+    let path_a = super::state::find_auto_state_file(&restore_key_a)
+        .expect("first restore key should have saved state");
+    let path_b = super::state::find_auto_state_file(&restore_key_b)
+        .expect("second restore key should have saved state");
+
+    let mut state = DaemonState::new();
+    let resp = execute_command(
+        &json!({
+            "id": "10",
+            "action": "navigate",
+            "url": "https://example.com",
+            "restoreKey": restore_key_a
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(&json!({ "id": "11", "action": "cookies_get" }), &mut state).await;
+    assert_success(&resp);
+    let cookies = get_data(&resp)["cookies"].as_array().unwrap();
+    assert!(
+        cookies
+            .iter()
+            .any(|c| c["name"] == cookie_name && c["value"] == "value-a"),
+        "first restore key should load value-a: {:?}",
+        cookies
+    );
+
+    let resp = execute_command(
+        &json!({
+            "id": "20",
+            "action": "navigate",
+            "url": "https://example.com",
+            "restoreKey": restore_key_b
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+    assert_eq!(get_data(&resp)["lifecycle"]["relaunchedBrowser"], true);
+
+    let resp = execute_command(&json!({ "id": "21", "action": "cookies_get" }), &mut state).await;
+    assert_success(&resp);
+    let cookies = get_data(&resp)["cookies"].as_array().unwrap();
+    assert!(
+        cookies
+            .iter()
+            .any(|c| c["name"] == cookie_name && c["value"] == "value-b"),
+        "switching restore keys should load value-b, not reuse value-a: {:?}",
+        cookies
+    );
+
+    let resp = execute_command(&json!({ "id": "99", "action": "close" }), &mut state).await;
+    assert_success(&resp);
+
+    let saved_b = std::fs::read_to_string(&path_b).expect("state file should remain readable");
+    assert!(saved_b.contains("value-b"));
+    assert!(!saved_b.contains("value-a"));
+
+    let _ = std::fs::remove_file(&path_a);
+    let _ = std::fs::remove_file(format!("{}.previous", path_a));
+    let _ = std::fs::remove_file(&path_b);
+    let _ = std::fs::remove_file(format!("{}.previous", path_b));
 }
 
 /// Verify that explicit `state_load` restores cookies into an existing
@@ -5366,6 +6900,78 @@ async fn e2e_react_tree_with_enable_hook() {
     assert!(
         tree.contains("Counter"),
         "Expected tree to contain 'Counter': {}",
+        tree
+    );
+
+    let _ = execute_command(&json!({ "id": "99", "action": "close" }), &mut state).await;
+}
+
+#[tokio::test]
+#[ignore]
+async fn e2e_relaunch_when_enable_changes_installs_react_hook() {
+    let mut state = DaemonState::new();
+
+    let resp = execute_command(
+        &json!({ "id": "1", "action": "launch", "headless": true }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(
+        &json!({ "id": "2", "action": "navigate", "url": &react_fixture_url() }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    let resp = execute_command(&json!({ "id": "3", "action": "react_tree" }), &mut state).await;
+    assert!(
+        resp.get("success").and_then(|v| v.as_bool()) == Some(false),
+        "React tree should fail before react-devtools is enabled: {}",
+        resp
+    );
+
+    let resp = execute_command(
+        &json!({
+            "id": "4",
+            "action": "launch",
+            "headless": true,
+            "enable": ["react-devtools"]
+        }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+    assert!(
+        get_data(&resp).get("reused").is_none(),
+        "changed enable list must relaunch, not reuse: {}",
+        resp
+    );
+    assert_eq!(
+        get_data(&resp)["lifecycle"]["relaunchedBrowser"],
+        true,
+        "lifecycle should report browser relaunch"
+    );
+
+    let resp = execute_command(
+        &json!({ "id": "5", "action": "navigate", "url": &react_fixture_url() }),
+        &mut state,
+    )
+    .await;
+    assert_success(&resp);
+
+    tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+
+    let resp = execute_command(&json!({ "id": "6", "action": "react_tree" }), &mut state).await;
+    assert_success(&resp);
+    let tree = get_data(&resp)
+        .get("tree")
+        .and_then(|v| v.as_str())
+        .unwrap_or_default();
+    assert!(
+        tree.contains("App"),
+        "Expected tree to contain App: {}",
         tree
     );
 

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "rules": [
+    {
+      "id": "browserbase-transient-provider-scope",
+      "version": 1,
+      "status": "approved",
+      "url_bases": ["browserbase.com"],
+      "tags": ["launch-failure", "local-chrome-sandbox"],
+      "semantic_terms": ["browserbase", "provider", "session", "launch-failure", "local-chrome-sandbox"],
+      "guidance": "This session was launched through a transient brokered Browserbase provider scope, but the later command could not reconnect and fell back to local Chrome. Relaunch the controlled workflow through the brokered provider scope; do not weaken the local Chrome sandbox."
+    }
+  ]
+}

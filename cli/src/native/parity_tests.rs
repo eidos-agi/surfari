@@ -45,6 +45,7 @@ impl Drop for TestKeyGuard {
 const DOCUMENTED_ACTIONS: &[&str] = &[
     "launch",
     "navigate",
+    "read",
     "url",
     "title",
     "content",
@@ -199,8 +200,11 @@ fn minimal_command(action: &str, id: &str) -> Value {
     let obj = cmd.as_object_mut().unwrap();
 
     match action {
-        "navigate" | "diff_url" | "waitforurl" => {
+        "navigate" | "diff_url" => {
             obj.insert("url".to_string(), json!("https://example.com"));
+        }
+        "waitforurl" => {
+            obj.insert("url".to_string(), json!("*"));
         }
         "evaluate" | "expose" => {
             obj.insert("script".to_string(), json!("1"));
@@ -244,9 +248,15 @@ fn minimal_command(action: &str, id: &str) -> Value {
         }
         "auth_save" => {
             obj.insert("name".to_string(), json!("parity-test-cred"));
-            obj.insert("url".to_string(), json!("https://example.com"));
+            obj.insert(
+                "url".to_string(),
+                json!("data:text/html,%3Cinput%20id%3Du%3E%3Cinput%20id%3Dp%20type%3Dpassword%3E%3Cbutton%20id%3Ds%20onclick%3D%22location.href%3D'data%3Atext%2Fhtml%2Cdone'%22%3Ego%3C%2Fbutton%3E"),
+            );
             obj.insert("username".to_string(), json!("u"));
             obj.insert("password".to_string(), json!("p"));
+            obj.insert("usernameSelector".to_string(), json!("#u"));
+            obj.insert("passwordSelector".to_string(), json!("#p"));
+            obj.insert("submitSelector".to_string(), json!("#s"));
         }
         "credentials_get" | "credentials_delete" | "auth_show" | "auth_delete" => {
             obj.insert("name".to_string(), json!("parity-test-cred"));
@@ -269,9 +279,11 @@ fn minimal_command(action: &str, id: &str) -> Value {
         }
         "waitforloadstate" => {
             obj.insert("state".to_string(), json!("load"));
+            obj.insert("timeout".to_string(), json!(100));
         }
         "waitforfunction" => {
-            obj.insert("script".to_string(), json!("() => true"));
+            obj.insert("expression".to_string(), json!("true"));
+            obj.insert("timeout".to_string(), json!(100));
         }
         "frame" => {
             obj.insert("selector".to_string(), json!("iframe"));
@@ -302,6 +314,7 @@ fn minimal_command(action: &str, id: &str) -> Value {
         }
         "auth_login" => {
             obj.insert("name".to_string(), json!("parity-test-cred"));
+            obj.insert("credentialProvider".to_string(), json!("missing-provider"));
         }
         "route" => {
             obj.insert("url".to_string(), json!("*"));
@@ -331,9 +344,11 @@ fn minimal_command(action: &str, id: &str) -> Value {
         }
         "responsebody" => {
             obj.insert("url".to_string(), json!("https://example.com"));
+            obj.insert("timeout".to_string(), json!(100));
         }
         "waitfordownload" => {
             obj.insert("path".to_string(), json!("/tmp/parity-download"));
+            obj.insert("timeout".to_string(), json!(100));
         }
         "styles" => {
             obj.insert("selector".to_string(), json!("body"));
@@ -376,14 +391,18 @@ fn minimal_command(action: &str, id: &str) -> Value {
 
 #[tokio::test]
 async fn test_all_documented_actions_are_handled() {
-    let _key_guard = TestKeyGuard::new();
     let mut state = DaemonState::new();
-    state.test_no_auto_launch = true;
+    state.default_timeout_ms = 100;
 
     for (i, action) in DOCUMENTED_ACTIONS.iter().enumerate() {
         let id = format!("parity-{}", i);
         let cmd = minimal_command(action, &id);
-        let result = execute_command(&cmd, &mut state).await;
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            execute_command(&cmd, &mut state),
+        )
+        .await
+        .unwrap_or_else(|_| panic!("Action '{}' timed out", action));
 
         assert!(
             result.get("id").is_some(),
@@ -420,7 +439,6 @@ async fn test_success_response_format() {
 #[tokio::test]
 async fn test_error_response_format() {
     let mut state = DaemonState::new();
-    state.test_no_auto_launch = true;
     let cmd = json!({ "action": "nonexistent_action_xyz", "id": "fmt-2" });
     let result = execute_command(&cmd, &mut state).await;
 
@@ -505,13 +523,17 @@ async fn test_auth_save_and_show() {
 #[tokio::test]
 async fn test_har_start_stop_without_browser() {
     let mut state = DaemonState::new();
-    state.test_no_auto_launch = true;
-    // This is a no-browser parity test; browser launch behavior is covered by e2e tests.
+    // har_start requires a browser. Because execute_command auto-launches when
+    // no browser is present, the result depends on Chrome availability: success
+    // if Chrome is found (CI), failure if not. Both outcomes are valid.
     let cmd = json!({ "action": "har_start", "id": "har-1" });
     let result = execute_command(&cmd, &mut state).await;
-    assert_eq!(result["success"], false);
-    assert!(result["error"].as_str().is_some());
-    assert!(!state.har_recording);
+    let success = result["success"].as_bool().unwrap_or(false);
+    if success {
+        assert!(state.har_recording);
+    } else {
+        assert!(result["error"].as_str().is_some());
+    }
 }
 
 #[tokio::test]
@@ -631,7 +653,6 @@ fn test_matches_status_filter() {
 #[tokio::test]
 async fn test_addscript_and_addinitscript_separate_dispatch() {
     let mut state = DaemonState::new();
-    state.test_no_auto_launch = true;
 
     // Both should be handled (not "Not yet implemented") even without a browser
     let cmd1 = json!({ "action": "addscript", "id": "as-1", "content": "console.log(1)" });
@@ -668,7 +689,6 @@ async fn test_frame_context_management() {
 #[tokio::test]
 async fn test_addstyle_supports_content_and_url() {
     let mut state = DaemonState::new();
-    state.test_no_auto_launch = true;
 
     // Both content-based and url-based addstyle should be recognized
     let cmd1 = json!({ "action": "addstyle", "id": "style-1", "content": "body { color: red }" });
