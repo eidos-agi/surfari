@@ -1881,7 +1881,8 @@ pub async fn execute_command(cmd: &Value, state: &mut DaemonState) -> Value {
         surfari_scope.finish(&response, state);
         return response;
     }
-    let response = execute_command_inner(cmd, state).await;
+    let mut response = execute_command_inner(cmd, state).await;
+    surfari_scope.apply_runtime_learning(&mut response);
     surfari_scope.finish(&response, state);
     response
 }

@@ -4,6 +4,7 @@ pub mod context;
 pub mod governance;
 pub mod learning;
 pub mod redaction;
+pub mod runtime_learning;
 
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -51,7 +52,15 @@ impl ActionLogScope {
             .unwrap_or_default();
         let log_path = resolve_log_path(state, use_id.as_deref());
         let candidate_path = resolve_candidate_path(state, use_id.as_deref());
-        let learning_context = learning::load_context(use_id.as_deref(), &browser_session, cmd);
+        let mut learning_context = learning::load_context(use_id.as_deref(), &browser_session, cmd);
+        if learning_context.get("domain").is_none_or(Value::is_null) {
+            if let Some(domain) = log_path
+                .as_deref()
+                .and_then(|path| runtime_learning::latest_domain(path, &browser_session))
+            {
+                learning_context["domain"] = Value::String(domain);
+            }
+        }
         let command_metadata = learning::command_metadata(cmd);
         let surfari_context = context::capture();
         let browser_anchor_before = browser_anchor::capture(state);
@@ -102,6 +111,15 @@ impl ActionLogScope {
                 self.action, self.governance_decision.reason
             )
         })
+    }
+
+    pub fn apply_runtime_learning(&self, response: &mut Value) {
+        runtime_learning::apply(
+            response,
+            self.learning_context.get("domain").and_then(Value::as_str),
+            &self.browser_session,
+            self.use_id.as_deref(),
+        );
     }
 
     pub fn finish(&self, response: &Value, state: &DaemonState) {
