@@ -44,39 +44,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "agent-browser"
-version = "0.32.2"
-dependencies = [
- "aes-gcm",
- "async-trait",
- "base64",
- "chrono",
- "dirs",
- "futures-util",
- "getrandom 0.2.17",
- "hex",
- "hmac",
- "image",
- "libc",
- "reqwest",
- "rust-embed",
- "serde",
- "serde_json",
- "sha2",
- "similar",
- "socket2",
- "tempfile",
- "time",
- "tokio",
- "tokio-tungstenite",
- "url",
- "urlencoding",
- "uuid",
- "windows-sys 0.52.0",
- "zip",
-]
-
-[[package]]
 name = "aligned"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2014,6 +1981,39 @@ name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+
+[[package]]
+name = "surfari"
+version = "0.33.0"
+dependencies = [
+ "aes-gcm",
+ "async-trait",
+ "base64",
+ "chrono",
+ "dirs",
+ "futures-util",
+ "getrandom 0.2.17",
+ "hex",
+ "hmac",
+ "image",
+ "libc",
+ "reqwest",
+ "rust-embed",
+ "serde",
+ "serde_json",
+ "sha2",
+ "similar",
+ "socket2",
+ "tempfile",
+ "time",
+ "tokio",
+ "tokio-tungstenite",
+ "url",
+ "urlencoding",
+ "uuid",
+ "windows-sys 0.52.0",
+ "zip",
+]
 
 [[package]]
 name = "syn"

@@ -1237,7 +1237,7 @@ fn print_lifecycle_note(data: &serde_json::Value) {
     }
 
     if !parts.is_empty() {
-        eprintln!("{} {}", color::dim("[agent-browser]"), parts.join("; "));
+        eprintln!("{} {}", color::dim("[surfari]"), parts.join("; "));
     }
 }
 
@@ -1255,12 +1255,18 @@ pub fn print_command_help(command: &str) -> bool {
 surfari browserbase - Manage bounded Browserbase sessions
 
 Usage:
-  surfari browserbase create [--alias <name>] [--request-id <id>] [--ttl <seconds>] [--start-url <https-url>]
+  surfari browserbase context create --alias <name> [--request-id <id>]
+  surfari browserbase context list
+  surfari browserbase context status <alias>
+  surfari browserbase context revoke <alias> [--request-id <id>]
+  surfari browserbase create [--alias <name>] [--request-id <id>] [--ttl <seconds>] [--start-url <https-url>] [--context <alias>]
   surfari browserbase status <session-or-alias>
+  surfari browserbase inspect <session-or-alias>
   surfari browserbase release <session-or-alias>
 
-Credentials come only from the encrypted broker. Output never includes CDP
-connection URLs, signing tokens, or API keys.
+Credentials come only from the encrypted broker. Persistent contexts preserve
+browser authentication across released sessions. Output never includes context
+IDs, CDP connection URLs, signing tokens, or API keys.
 "##
         }
         // === Navigation ===
@@ -3308,12 +3314,14 @@ Examples:
 
         _ => return false,
     };
-    println!("{}", help.trim());
+    println!("{}", branded_help(help).trim());
     true
 }
 
 pub fn print_help() {
     println!(
+        "{}",
+        branded_help(
         r#"
 agent-browser - fast browser automation CLI for AI agents
 
@@ -3703,7 +3711,17 @@ iOS Simulator (requires Xcode and Appium):
   agent-browser -p ios swipe up                            # Swipe gesture
   agent-browser -p ios tap @e1                             # Touch element
 "#
+        )
+        .trim()
     );
+}
+
+fn branded_help(help: &str) -> String {
+    help.replace("agent-browser", "surfari")
+        // These are upstream-compatible data/config identifiers, not the executable.
+        .replace("surfari.json", "agent-browser.json")
+        .replace("~/.surfari/", "~/.agent-browser/")
+        .replace("surfari-plugin", "agent-browser-plugin")
 }
 
 fn print_snapshot_diff(data: &serde_json::Map<String, serde_json::Value>) {
@@ -3783,7 +3801,7 @@ fn print_screenshot_diff(data: &serde_json::Map<String, serde_json::Value>) {
 }
 
 pub fn print_version() {
-    println!("agent-browser {}", env!("CARGO_PKG_VERSION"));
+    println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 }
 
 #[cfg(test)]
@@ -3793,6 +3811,23 @@ mod tests {
         OutputOptions,
     };
     use serde_json::json;
+
+    #[test]
+    fn package_identity_is_surfari() {
+        assert_eq!(env!("CARGO_PKG_NAME"), "surfari");
+        assert_eq!(env!("CARGO_PKG_VERSION"), "0.33.0");
+    }
+
+    #[test]
+    fn help_uses_surfari_without_renaming_legacy_config_protocols() {
+        let rendered = super::branded_help(
+            "agent-browser open\n./agent-browser.json\n~/.agent-browser/config.json\nagent-browser-plugin-vault",
+        );
+        assert_eq!(
+            rendered,
+            "surfari open\n./agent-browser.json\n~/.agent-browser/config.json\nagent-browser-plugin-vault"
+        );
+    }
 
     #[test]
     fn test_format_stream_status_text_for_enabled_stream() {

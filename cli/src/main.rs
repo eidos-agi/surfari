@@ -281,7 +281,7 @@ fn run_interactive_confirmations(
     output_opts: &OutputOptions,
 ) -> Response {
     while let Some(prompt) = confirmation_prompt_from_response(&resp) {
-        eprintln!("[agent-browser] Action requires confirmation:");
+        eprintln!("[surfari] Action requires confirmation:");
         if prompt.category.is_empty() {
             eprintln!("  {}", prompt.description);
         } else {
