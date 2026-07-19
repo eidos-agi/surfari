@@ -22,3 +22,15 @@ The `-p` flag takes precedence over `AGENT_BROWSER_PROVIDER`.
 When enabled, agent-browser connects to a Browserbase session instead of launching a local browser. All commands work identically.
 
 Get your API key from the [Browserbase Dashboard](https://browserbase.com/overview).
+
+## Surfari explicit lifecycle
+
+```bash
+surfari browserbase create --alias proof --ttl 900
+surfari browserbase status proof
+surfari browserbase release proof
+```
+
+Eidos services inject the key through systemd
+`LoadCredentialEncrypted=`. The lifecycle output contains only a redacted
+session identifier, status, and safe human live-view URL.

@@ -1,5 +1,16 @@
 # Command Reference
 
+## Surfari Browserbase lifecycle
+
+```bash
+surfari browserbase create --alias proof --ttl 900
+surfari browserbase status proof
+surfari browserbase release proof
+```
+
+These commands use the encrypted credential broker and return only redacted
+session metadata and a safe human live-view URL.
+
 Complete reference for all agent-browser commands. For quick start and common patterns, see SKILL.md.
 
 ## Navigation

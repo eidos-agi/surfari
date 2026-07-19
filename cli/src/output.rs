@@ -1250,6 +1250,19 @@ fn print_warning(resp: &Response) {
 /// Print command-specific help. Returns true if help was printed, false if command unknown.
 pub fn print_command_help(command: &str) -> bool {
     let help = match command {
+        "browserbase" => {
+            r##"
+surfari browserbase - Manage bounded Browserbase sessions
+
+Usage:
+  surfari browserbase create [--alias <name>] [--request-id <id>] [--ttl <seconds>] [--start-url <https-url>]
+  surfari browserbase status <session-or-alias>
+  surfari browserbase release <session-or-alias>
+
+Credentials come only from the encrypted broker. Output never includes CDP
+connection URLs, signing tokens, or API keys.
+"##
+        }
         // === Navigation ===
         "open" | "goto" | "navigate" => {
             r##"
@@ -3468,6 +3481,11 @@ Dashboard:
   dashboard [start]          Start the dashboard server (default port: 4848)
   dashboard start --port <n> Start on a specific port
   dashboard stop             Stop the dashboard server
+
+Browserbase:
+  browserbase create         Create a bounded Browserbase session
+  browserbase status <id>    Read redacted session status
+  browserbase release <id>   Release a session idempotently
 
 Setup:
   install                    Install browser binaries

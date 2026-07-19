@@ -360,6 +360,12 @@ pub struct DaemonState {
     active_provider_session: Option<ActiveProviderSession>,
     /// Actions already approved while replaying a confirmed command.
     confirmed_policy_actions: HashSet<String>,
+    #[cfg(test)]
+    pub test_surfari_action_log_path: Option<PathBuf>,
+    #[cfg(test)]
+    pub test_surfari_learning_candidates_path: Option<PathBuf>,
+    #[cfg(test)]
+    pub test_surfari_use_id: Option<String>,
 }
 
 impl DaemonState {
@@ -437,6 +443,12 @@ impl DaemonState {
             plugin_init_scripts: Vec::new(),
             active_provider_session: None,
             confirmed_policy_actions: HashSet::new(),
+            #[cfg(test)]
+            test_surfari_action_log_path: None,
+            #[cfg(test)]
+            test_surfari_learning_candidates_path: None,
+            #[cfg(test)]
+            test_surfari_use_id: None,
         }
     }
 
@@ -1862,6 +1874,19 @@ fn policy_actions_for_command(
 }
 
 pub async fn execute_command(cmd: &Value, state: &mut DaemonState) -> Value {
+    let surfari_scope = super::surfari::ActionLogScope::start(cmd, state);
+    if let Some(error) = surfari_scope.governance_error() {
+        let id = cmd.get("id").and_then(|value| value.as_str()).unwrap_or("");
+        let response = error_response(id, &error);
+        surfari_scope.finish(&response, state);
+        return response;
+    }
+    let response = execute_command_inner(cmd, state).await;
+    surfari_scope.finish(&response, state);
+    response
+}
+
+async fn execute_command_inner(cmd: &Value, state: &mut DaemonState) -> Value {
     let action = cmd.get("action").and_then(|v| v.as_str()).unwrap_or("");
     let id = cmd
         .get("id")

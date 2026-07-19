@@ -121,25 +121,15 @@ pub async fn close_provider_session_with_plugins(
         return;
     }
 
-    let client = reqwest::Client::new();
     match session.provider.as_str() {
         "browserbase" => {
             if let Ok(api_key) = env::var("BROWSERBASE_API_KEY") {
-                let _ = client
-                    .post(format!(
-                        "https://api.browserbase.com/v1/sessions/{}",
-                        session.session_id
-                    ))
-                    .header("Content-Type", "application/json")
-                    .header("X-BB-API-Key", &api_key)
-                    .json(&serde_json::json!({ "status": "REQUEST_RELEASE" }))
-                    .send()
-                    .await;
+                let _ = browserbase_release(&api_key, &session.session_id).await;
             }
         }
         "browser-use" => {
             if let Ok(api_key) = env::var("BROWSER_USE_API_KEY") {
-                let _ = client
+                let _ = reqwest::Client::new()
                     .patch(format!(
                         "https://api.browser-use.com/api/v2/browsers/{}",
                         session.session_id
@@ -153,13 +143,16 @@ pub async fn close_provider_session_with_plugins(
         }
         "browserless" => {
             // session_id holds the stop URL for browserless
-            let _ = client.delete(&session.session_id).send().await;
+            let _ = reqwest::Client::new()
+                .delete(&session.session_id)
+                .send()
+                .await;
         }
         "kernel" => {
             if let Ok(api_key) = env::var("KERNEL_API_KEY") {
                 let endpoint = env::var("KERNEL_ENDPOINT")
                     .unwrap_or_else(|_| "https://api.onkernel.com".to_string());
-                let _ = client
+                let _ = reqwest::Client::new()
                     .delete(format!(
                         "{}/browsers/{}",
                         endpoint.trim_end_matches('/'),
@@ -252,32 +245,7 @@ async fn connect_browserbase() -> Result<(String, Option<ProviderSession>), Stri
     let api_key = env::var("BROWSERBASE_API_KEY")
         .map_err(|_| "BROWSERBASE_API_KEY environment variable is not set")?;
 
-    let client = reqwest::Client::new();
-    let response = client
-        .post("https://api.browserbase.com/v1/sessions")
-        .header("content-type", "application/json")
-        .header("x-bb-api-key", &api_key)
-        .body("{}")
-        .send()
-        .await
-        .map_err(|e| format!("Browserbase request failed: {}", e))?;
-
-    let status = response.status();
-    let body = response
-        .text()
-        .await
-        .map_err(|e| format!("Failed to read Browserbase response: {}", e))?;
-
-    if !status.is_success() {
-        return Err(format!(
-            "Browserbase API error ({}): {}",
-            status.as_u16(),
-            body
-        ));
-    }
-
-    let json: Value =
-        serde_json::from_str(&body).map_err(|e| format!("Invalid Browserbase response: {}", e))?;
+    let json = browserbase_create(&api_key, &json!({})).await?;
 
     let session_id = json
         .get("id")
@@ -298,6 +266,70 @@ async fn connect_browserbase() -> Result<(String, Option<ProviderSession>), Stri
             session_id,
         }),
     ))
+}
+
+async fn browserbase_call(
+    request: reqwest::RequestBuilder,
+    api_key: &str,
+) -> Result<Value, String> {
+    let response = request
+        .header("X-BB-API-Key", api_key)
+        .send()
+        .await
+        .map_err(|_| "Browserbase request failed".to_string())?;
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .map_err(|_| "Browserbase response could not be read".to_string())?;
+    if !status.is_success() {
+        return Err(format!("Browserbase API returned HTTP {}", status.as_u16()));
+    }
+    serde_json::from_str(&body).map_err(|_| "Browserbase returned invalid JSON".to_string())
+}
+
+pub async fn browserbase_create(api_key: &str, body: &Value) -> Result<Value, String> {
+    browserbase_call(
+        reqwest::Client::new()
+            .post("https://api.browserbase.com/v1/sessions")
+            .header("Content-Type", "application/json")
+            .json(body),
+        api_key,
+    )
+    .await
+}
+
+pub async fn browserbase_status(api_key: &str, session_id: &str) -> Result<Value, String> {
+    browserbase_call(
+        reqwest::Client::new().get(format!(
+            "https://api.browserbase.com/v1/sessions/{session_id}"
+        )),
+        api_key,
+    )
+    .await
+}
+
+pub async fn browserbase_debug(api_key: &str, session_id: &str) -> Result<Value, String> {
+    browserbase_call(
+        reqwest::Client::new().get(format!(
+            "https://api.browserbase.com/v1/sessions/{session_id}/debug"
+        )),
+        api_key,
+    )
+    .await
+}
+
+pub async fn browserbase_release(api_key: &str, session_id: &str) -> Result<Value, String> {
+    browserbase_call(
+        reqwest::Client::new()
+            .post(format!(
+                "https://api.browserbase.com/v1/sessions/{session_id}"
+            ))
+            .header("Content-Type", "application/json")
+            .json(&json!({"status": "REQUEST_RELEASE"})),
+        api_key,
+    )
+    .await
 }
 
 async fn connect_browserless() -> Result<(String, Option<ProviderSession>), String> {

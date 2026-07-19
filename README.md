@@ -1672,6 +1672,19 @@ When enabled, agent-browser connects to a Browserbase session instead of launchi
 
 Get your API key from the [Browserbase Dashboard](https://browserbase.com/overview).
 
+Surfari also exposes a redacted explicit lifecycle:
+
+```bash
+surfari browserbase create --alias proof --ttl 900
+surfari browserbase status proof
+surfari browserbase release proof
+```
+
+On systemd-managed Eidos hosts, the API key is injected with
+`LoadCredentialEncrypted=browserbase-api-key:/etc/credstore.encrypted/emux-browser-broker/browserbase-api-key.cred`.
+The lifecycle commands read only `$CREDENTIALS_DIRECTORY/browserbase-api-key`
+and never return CDP URLs, signing tokens, or credentials.
+
 ### Browser Use
 
 [Browser Use](https://browser-use.com) provides cloud browser infrastructure for AI agents. Use it when running agent-browser in environments where a local browser isn't available (serverless, CI/CD, etc.).

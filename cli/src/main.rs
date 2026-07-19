@@ -1,3 +1,4 @@
+mod browserbase;
 mod chat;
 mod color;
 mod commands;
@@ -994,6 +995,10 @@ fn main() {
     if clean.is_empty() {
         print_help();
         return;
+    }
+
+    if clean.first().map(|s| s.as_str()) == Some("browserbase") {
+        exit(browserbase::run(&clean[1..]));
     }
 
     // Handle install separately
