@@ -69,13 +69,28 @@ This exits nonzero if the package manager cannot install every required browser 
 
 ## Updating
 
-Upgrade to the latest version:
+### Public package channels (npm / Homebrew / Cargo)
 
 ```bash
 agent-browser upgrade
 ```
 
 Detects your installation method (npm, Homebrew, or Cargo) and runs the appropriate update command automatically. Displays the version change on success, or informs you if you are already on the latest version.
+
+### Eidos-AGI Surfari (GitHub release / web channel)
+
+If you install from **this fork’s GitHub releases** (product name `surfari`, release asset still named `agent-browser-*`), **do not use npm** and **do not rely on the built-in `upgrade` alone** — it only knows npm/Homebrew/Cargo.
+
+Use the web installer and upgrade path documented in [Eidos install & upgrade](/eidos-upgrade):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/eidos-agi/surfari/main/scripts/install-eidos-surfari.sh | bash
+surfari upgrade                 # re-download latest release asset from GitHub
+surfari upgrade v0.32.2         # pin a tag
+bash scripts/install-eidos-surfari.sh --self-test   # clean-room proof
+```
+
+Also see [`docs/EIDOS_UPGRADE.md`](https://github.com/eidos-agi/surfari/blob/main/docs/EIDOS_UPGRADE.md) in the repo.
 
 ## Doctor
 

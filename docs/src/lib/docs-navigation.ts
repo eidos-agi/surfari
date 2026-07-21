@@ -14,6 +14,7 @@ export const navigation: NavSection[] = [
     items: [
       { name: "Introduction", href: "/" },
       { name: "Installation", href: "/installation" },
+      { name: "Eidos Install & Upgrade", href: "/eidos-upgrade" },
       { name: "Quick Start", href: "/quick-start" },
       { name: "Skills", href: "/skills" },
     ],

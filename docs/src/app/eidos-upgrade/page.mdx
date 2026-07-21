@@ -1,0 +1,124 @@
+# Eidos install & upgrade (web release channel)
+
+This is the **recommended channel for Eidos-AGI Surfari** on machines that should track **this fork’s GitHub releases**, not the public npm `agent-browser` package.
+
+Proved on a clean-room home: download → rename → PATH wrapper → re-upgrade from the web → live browser automation.
+
+## Why not `agent-browser upgrade`?
+
+The binary’s built-in `upgrade` only knows **npm / Homebrew / Cargo**. It does **not** download GitHub release assets for `eidos-agi/surfari`.
+
+| Channel | Command | Source |
+|---------|---------|--------|
+| **Eidos (this repo)** | `surfari upgrade` / installer | GitHub Releases (web) |
+| Public vercel package | `npm install -g agent-browser` + `agent-browser upgrade` | npm registry |
+
+There is **no** npm package named `surfari` or `@eidos-agi/surfari`. Do not use npm for this channel.
+
+## Product name vs release asset
+
+| | |
+|--|--|
+| **Product / PATH name** | `surfari` (also `agent-browser` as a compat symlink) |
+| **GitHub release asset** | `agent-browser-<platform>` (upstream cargo binary name) |
+| **Install rule** | Download asset from the web, **rename to `surfari`** |
+
+Example (macOS Apple Silicon):
+
+```text
+https://github.com/eidos-agi/surfari/releases/latest/download/agent-browser-darwin-arm64
+→ ~/.local/share/eidos/surfari/bin/surfari
+```
+
+## One-shot install (new machine)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/eidos-agi/surfari/main/scripts/install-eidos-surfari.sh | bash
+```
+
+Or from a clone:
+
+```bash
+bash scripts/install-eidos-surfari.sh
+bash scripts/install-eidos-surfari.sh v0.32.2   # pin tag
+```
+
+Requires: `bash`, `curl`, `uname`. Optional: `gh` (fallback only). **Does not use npm.**
+
+After install, ensure `~/.local/bin` is on `PATH`.
+
+```bash
+surfari --version
+surfari install                 # Chrome for Testing (first browser use)
+surfari open https://example.com
+```
+
+## Upgrade (months later)
+
+```bash
+surfari upgrade                 # latest release asset via GitHub
+surfari upgrade v0.32.2         # pin a tag
+```
+
+What that does:
+
+1. Downloads `https://github.com/eidos-agi/surfari/releases/latest/download/<asset>`
+2. Renames the asset to `surfari` under the install prefix
+3. Keeps PATH on a thin wrapper so the next `upgrade` stays on the web channel
+
+Same as re-running:
+
+```bash
+bash scripts/install-eidos-surfari.sh
+# or
+install-eidos-surfari   # if linked on PATH
+```
+
+## Prove future installers still work
+
+```bash
+bash scripts/install-eidos-surfari.sh --self-test
+```
+
+Clean-room checks:
+
+- Fake `$HOME` install
+- Paths for `surfari` and `agent-browser`
+- Version
+- Second-cycle `surfari upgrade` from the web (must not run `npm install`)
+- Release-asset rename SHA integrity
+- Native Mach-O / ELF binary
+- `surfari browserbase --help`
+- Live screenshot of `https://example.com` when a Chrome cache is available
+
+## Layout (default prefix)
+
+```text
+~/.local/share/eidos/surfari/
+  install.sh                 # persisted installer
+  update-eidos-surfari.sh    # called by wrapper on upgrade
+  surfari-wrapper.sh         # PATH target
+  bin/surfari                # native binary (renamed asset)
+  bin/agent-browser-*        # provenance copy of the asset
+
+~/.local/bin/surfari
+~/.local/bin/surfari-browser
+~/.local/bin/agent-browser   # → same wrapper
+```
+
+## Browserbase
+
+```bash
+surfari browserbase create|status|release
+```
+
+Credentials come only from the encrypted broker. CLI output must not print CDP URLs, signing tokens, or API keys.
+
+## Do not
+
+```bash
+npm install -g agent-browser     # public vercel channel
+agent-browser upgrade            # if not on the Eidos wrapper — sniffs npm/brew/cargo
+```
+
+If `surfari upgrade` ever runs `npm install`, the web wrapper is missing — re-run `scripts/install-eidos-surfari.sh`.
