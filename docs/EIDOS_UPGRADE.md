@@ -75,3 +75,49 @@ Rules of the road:
 - Installer and docs changes are Derivative Works; state material packaging changes in `NOTICE` / docs when they matter.
 
 Full SPDX: `Apache-2.0`.
+## Canonical channel (this machine / Eidos)
+
+| Preferred | Command |
+|-----------|---------|
+| macOS | `brew install eidos-agi/tap/surfari` then `brew upgrade surfari` |
+| any OS | curl installer / `surfari upgrade` (web) |
+
+**Not** Homebrew core `agent-browser` (vercel-labs). Core stays upstream; Eidos packaging is **`eidos-agi/tap/surfari` only**.
+
+### PATH / which binary
+
+If both Homebrew and the curl prefix are installed, the wrapper on `~/.local/bin/surfari` **prefers the Homebrew binary** and routes `surfari upgrade` to `brew upgrade eidos-agi/tap/surfari`.
+
+```bash
+surfari channel    # channel=homebrew|local-web, browserbase readiness
+```
+
+### Browserbase readiness (macOS)
+
+1. Prefer provider flag with API key (local):
+
+```bash
+# ~/.agent-browser/browserbase.env  (chmod 600; never commit)
+BROWSERBASE_API_KEY=bb_...
+```
+
+```bash
+surfari -p browserbase open https://example.com
+```
+
+The wrapper auto-sources `~/.agent-browser/browserbase.env` when the key is not already in the environment.
+
+2. Lifecycle subcommands (`surfari browserbase create|status|release`) use the **encrypted broker** (Eidos service / systemd credentials). On a plain Mac mini without broker injection they report `Browserbase credential unavailable from encrypted broker` until Knox/service credentials are configured.
+
+3. Check without secrets:
+
+```bash
+surfari channel
+surfari doctor --offline --quick
+```
+
+### Homebrew formula bumps after a release
+
+- Automatic daily cron on `eidos-agi/homebrew-tap` (`Bump surfari formula`)
+- On GitHub Release publish: workflow `Notify Homebrew tap` (needs secret `HOMEBREW_TAP_TOKEN`)
+- Manual: `gh workflow run 'Bump surfari formula' -R eidos-agi/homebrew-tap -f tag=vX.Y.Z`

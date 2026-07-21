@@ -1,0 +1,53 @@
+name: Notify Homebrew tap
+
+# After a GitHub Release is published, bump eidos-agi/homebrew-tap Formula/surfari.
+# Requires secret HOMEBREW_TAP_TOKEN (PAT with contents:write on eidos-agi/homebrew-tap).
+# If unset, the tap's daily cron still picks up releases.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.32.2); empty = latest"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event.release.tag_name || github.event.inputs.tag || '' }}"
+          if [[ -z "$TAG" ]]; then
+            TAG="$(gh release view -R eidos-agi/surfari --json tagName -q .tagName)"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Resolved tag: $TAG"
+
+      - name: Dispatch homebrew-tap bump
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "::notice::HOMEBREW_TAP_TOKEN not configured."
+            echo "Homebrew formula will update via eidos-agi/homebrew-tap daily cron"
+            echo "or manual: gh workflow run 'Bump surfari formula' -R eidos-agi/homebrew-tap -f tag=$TAG"
+            exit 0
+          fi
+          gh api repos/eidos-agi/homebrew-tap/dispatches \
+            -H "Accept: application/vnd.github+json" \
+            -f event_type='surfari-release' \
+            -f "client_payload[tag]=${TAG}"
+          echo "Dispatched surfari-release to eidos-agi/homebrew-tap for $TAG"

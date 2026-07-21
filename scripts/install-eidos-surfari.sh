@@ -88,11 +88,26 @@ download_asset() {
 }
 
 write_wrapper() {
-  # Wrapper must resolve through PATH symlinks back to PREFIX (not bindir).
+  # Wrapper prefers Homebrew eidos-agi/tap when present; else local binary.
+  # upgrade/update → brew upgrade or web reinstall. Never npm.
   cat > "$WRAPPER" <<'WRAP'
 #!/usr/bin/env bash
 set -euo pipefail
-# Resolve this script even when invoked via ~/.local/bin/surfari → .../surfari-wrapper.sh
+BREW_BIN=""
+if command -v brew >/dev/null 2>&1; then
+  if brew --prefix eidos-agi/tap/surfari >/dev/null 2>&1; then
+    _p="$(brew --prefix eidos-agi/tap/surfari 2>/dev/null || true)"
+    if [[ -n "${_p:-}" && -x "${_p}/bin/surfari" ]]; then
+      BREW_BIN="${_p}/bin/surfari"
+    fi
+  fi
+  if [[ -z "${BREW_BIN}" && -x /opt/homebrew/opt/surfari/bin/surfari ]]; then
+    BREW_BIN=/opt/homebrew/opt/surfari/bin/surfari
+  fi
+  if [[ -z "${BREW_BIN}" && -x /usr/local/opt/surfari/bin/surfari ]]; then
+    BREW_BIN=/usr/local/opt/surfari/bin/surfari
+  fi
+fi
 _src="${BASH_SOURCE[0]:-$0}"
 while [[ -L "$_src" ]]; do
   _dir="$(cd -P "$(dirname "$_src")" && pwd)"
@@ -100,22 +115,61 @@ while [[ -L "$_src" ]]; do
   [[ "$_src" != /* ]] && _src="${_dir}/${_src}"
 done
 HERE="$(cd -P "$(dirname "$_src")" && pwd)"
-REAL="${HERE}/bin/surfari"
+LOCAL_BIN="${HERE}/bin/surfari"
 UPDATER="${HERE}/update-eidos-surfari.sh"
+INSTALLER="${HERE}/install.sh"
+REAL="${BREW_BIN:-$LOCAL_BIN}"
 if [[ ! -x "$REAL" ]]; then
-  echo "surfari binary missing at $REAL" >&2
+  echo "surfari binary missing (brew and ${LOCAL_BIN})" >&2
   exit 127
 fi
 case "${1:-}" in
   upgrade|update)
     shift
+    if [[ -n "${BREW_BIN}" ]] && command -v brew >/dev/null 2>&1; then
+      if brew list --formula eidos-agi/tap/surfari >/dev/null 2>&1 \
+        || brew list --formula surfari >/dev/null 2>&1; then
+        echo "Upgrading via Homebrew (eidos-agi/tap/surfari)..."
+        exec brew upgrade eidos-agi/tap/surfari "$@"
+      fi
+    fi
     if [[ -x "$UPDATER" ]]; then
       exec "$UPDATER" "$@"
     fi
-    echo "updater missing at $UPDATER" >&2
+    if [[ -x "$INSTALLER" ]]; then
+      exec "$INSTALLER" "$@"
+    fi
+    echo "No updater found; reinstall: brew install eidos-agi/tap/surfari" >&2
     exit 1
     ;;
+  doctor-eidos|channel)
+    echo "channel_bin=$REAL"
+    if [[ -n "${BREW_BIN}" ]]; then
+      echo "channel=homebrew"
+    else
+      echo "channel=local-web"
+      echo "prefix=$HERE"
+    fi
+    echo "version=$("$REAL" --version 2>/dev/null || true)"
+    if [[ -n "${BROWSERBASE_API_KEY:-}" ]]; then
+      echo "browserbase_env=set"
+    else
+      echo "browserbase_env=unset"
+    fi
+    if [[ -f "${HOME}/.agent-browser/browserbase.env" ]]; then
+      echo "browserbase_env_file=present"
+    else
+      echo "browserbase_env_file=missing"
+    fi
+    exit 0
+    ;;
   *)
+    if [[ -z "${BROWSERBASE_API_KEY:-}" && -f "${HOME}/.agent-browser/browserbase.env" ]]; then
+      set -a
+      # shellcheck disable=SC1090
+      source "${HOME}/.agent-browser/browserbase.env"
+      set +a
+    fi
     exec "$REAL" "$@"
     ;;
 esac

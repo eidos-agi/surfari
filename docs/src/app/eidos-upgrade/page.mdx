@@ -147,3 +147,21 @@ Redistributions (curl installer, Homebrew) must include:
 - `NOTICE` — attribution to Vercel / agent-browser and Eidos packaging notes  
 
 See repository [`NOTICE`](https://github.com/eidos-agi/surfari/blob/main/NOTICE) and [`docs/EIDOS_UPGRADE.md`](https://github.com/eidos-agi/surfari/blob/main/docs/EIDOS_UPGRADE.md#licensing-apache-20-redistribution). Marks “Vercel” / “agent-browser” are for attribution only.
+
+## Channel check & Browserbase (macOS)
+
+```bash
+surfari channel                 # homebrew vs local-web; browserbase env presence
+surfari upgrade                 # brew upgrade when tap-installed; else web
+```
+
+Browserbase local provider:
+
+```bash
+# chmod 600 ~/.agent-browser/browserbase.env  with BROWSERBASE_API_KEY=
+surfari -p browserbase open https://example.com
+```
+
+`surfari browserbase create` needs the encrypted broker (Eidos service credentials), not only the env key.
+
+**Canonical brew formula is `eidos-agi/tap/surfari` — not homebrew-core `agent-browser`.**
