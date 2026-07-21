@@ -151,9 +151,41 @@ link_path_names() {
   ln -sfn "$WRAPPER" "${BIN_LINK_DIR}/agent-browser"
 }
 
+
+install_licenses() {
+  # Apache-2.0 §4: ship License + NOTICE with Object form redistribution
+  local licdir="${PREFIX}/licenses"
+  mkdir -p "$licdir"
+  local here base ref
+  here="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+  base="https://raw.githubusercontent.com/${REPO}"
+  if [[ -n "${TAG:-}" ]]; then
+    ref="$TAG"
+  else
+    ref="main"
+  fi
+  for f in LICENSE NOTICE; do
+    # Prefer files from a git checkout of this repo (works before remote merge)
+    if [[ -f "${here}/../${f}" ]]; then
+      cp -f "${here}/../${f}" "${licdir}/${f}"
+    elif [[ -f "${here}/${f}" ]]; then
+      cp -f "${here}/${f}" "${licdir}/${f}"
+    elif curl -fsSL "${base}/${ref}/${f}" -o "${licdir}/${f}" 2>/dev/null; then
+      :
+    fi
+  done
+  if [[ ! -s "${licdir}/LICENSE" ]]; then
+    echo "WARNING: LICENSE missing under ${licdir} (Apache-2.0 redistribution)" >&2
+  fi
+  if [[ ! -s "${licdir}/NOTICE" ]]; then
+    echo "WARNING: NOTICE missing under ${licdir} (attribution)" >&2
+  fi
+}
+
 install_main() {
   mkdir -p "$BINDIR" "$PREFIX"
   download_asset "$BINDIR"
+  install_licenses
   write_wrapper
   # Persist this installer so future upgrades on this machine are local.
   # If we were piped from curl, $0 may be bash / fd — copy from BASH_SOURCE when possible.
@@ -190,6 +222,8 @@ install_main() {
   echo "  prefix:  ${PREFIX}"
   echo "  bindir:  ${BIN_LINK_DIR}"
   echo "  version: $("${BIN_LINK_DIR}/surfari" --version)"
+  echo "  license: Apache-2.0 (see ${PREFIX}/licenses/LICENSE)"
+  echo "  notice:  ${PREFIX}/licenses/NOTICE"
   echo "  upgrade: surfari upgrade"
 }
 
@@ -253,6 +287,13 @@ self_test() {
   file "${fake_prefix}/bin/surfari" | tee /dev/stderr | grep -Eqi 'Mach-O|ELF|executable' \
     || { echo "FAIL not a native binary"; exit 1; }
   echo "OK native binary"
+
+  # Apache-2.0 redistribution artifacts
+  [[ -s "${fake_prefix}/licenses/LICENSE" ]] || { echo "FAIL missing LICENSE"; exit 1; }
+  [[ -s "${fake_prefix}/licenses/NOTICE" ]] || { echo "FAIL missing NOTICE"; exit 1; }
+  grep -q "Apache" "${fake_prefix}/licenses/LICENSE" || { echo "FAIL LICENSE not Apache"; exit 1; }
+  grep -qi "Vercel" "${fake_prefix}/licenses/NOTICE" || { echo "FAIL NOTICE missing Vercel attribution"; exit 1; }
+  echo "OK LICENSE + NOTICE installed"
 
   # Browserbase subcommand present (no credentials required for --help)
   env HOME="$fake_home" PATH="$fake_bin:/usr/bin:/bin" "${fake_bin}/surfari" browserbase --help 2>&1 | head -5 \

@@ -1,0 +1,40 @@
+Surfari (Eidos packaging of agent-browser)
+==========================================
+
+This distribution may install or rename prebuilt binaries of agent-browser under
+the product name "surfari". The software is licensed under the Apache License,
+Version 2.0. A copy of the License is included as LICENSE in this repository
+and must be redistributed with Object form distributions (including installers
+and Homebrew packages).
+
+Upstream project
+----------------
+  Name:       agent-browser
+  Homepage:   https://agent-browser.dev
+  Source:     https://github.com/vercel-labs/agent-browser
+  Copyright:  Copyright 2025 Vercel Inc.
+  License:    Apache License, Version 2.0
+              (see LICENSE in this repository; identical upstream LICENSE)
+
+Eidos-AGI fork / packaging
+--------------------------
+  Name:       Surfari (product / PATH name)
+  Source:     https://github.com/eidos-agi/surfari
+  Packaging:  https://github.com/eidos-agi/homebrew-tap (Homebrew formula)
+              scripts/install-eidos-surfari.sh (curl installer)
+  Notes:      Release assets retain the upstream cargo binary basename
+              (agent-browser-<platform>). Installers rename the asset to
+              "surfari". The Eidos release channel does not use npm for
+              upgrades. Packaging and documentation changes are Derivative
+              Works under Apache-2.0; the native binary is redistributed in
+              Object form with LICENSE + this NOTICE.
+
+Trademarks
+----------
+  "Vercel", "agent-browser", and related marks are property of their
+  respective owners. Use of those names is for attribution of the
+  upstream work only and does not imply endorsement by Vercel Inc. or
+  other upstream contributors.
+
+This NOTICE file is provided for attribution (Apache-2.0 §4(d) practice).
+It does not modify the License.

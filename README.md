@@ -91,6 +91,7 @@ bash scripts/install-eidos-surfari.sh --self-test
 
 Full notes: [docs/EIDOS_UPGRADE.md](./docs/EIDOS_UPGRADE.md), docs site **Eidos Install & Upgrade**, and the tap [eidos-agi/homebrew-tap](https://github.com/eidos-agi/homebrew-tap).
 
+**License:** Apache-2.0 (upstream agent-browser / Copyright 2025 Vercel Inc.). Packaging redistributes release binaries as `surfari` and ships `LICENSE` + [`NOTICE`](./NOTICE) with installers and Homebrew.
 ### Requirements
 
 - **Chrome** - Run `agent-browser install` to download Chrome from [Chrome for Testing](https://developer.chrome.com/blog/chrome-for-testing/) (Google's official automation channel). Existing Chrome, Brave, Playwright, and Puppeteer installations are detected automatically. No Playwright or Node.js required for the daemon.
