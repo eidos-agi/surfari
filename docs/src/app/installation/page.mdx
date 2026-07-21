@@ -79,18 +79,22 @@ Detects your installation method (npm, Homebrew, or Cargo) and runs the appropri
 
 ### Eidos-AGI Surfari (GitHub release / web channel)
 
-If you install from **this fork’s GitHub releases** (product name `surfari`, release asset still named `agent-browser-*`), **do not use npm** and **do not rely on the built-in `upgrade` alone** — it only knows npm/Homebrew/Cargo.
+If you install from **this fork’s GitHub releases** (product name `surfari`, release asset still named `agent-browser-*`), **do not use npm** and **do not rely on the built-in `upgrade` alone** — it only knows npm/Homebrew/Cargo (and Homebrew core’s `agent-browser` is the vercel package).
 
-Use the web installer and upgrade path documented in [Eidos install & upgrade](/eidos-upgrade):
+Use the path documented in [Eidos install & upgrade](/eidos-upgrade):
 
 ```bash
+# macOS Homebrew (Eidos tap)
+brew install eidos-agi/tap/surfari
+brew upgrade surfari
+
+# any machine
 curl -fsSL https://raw.githubusercontent.com/eidos-agi/surfari/main/scripts/install-eidos-surfari.sh | bash
 surfari upgrade                 # re-download latest release asset from GitHub
-surfari upgrade v0.32.2         # pin a tag
 bash scripts/install-eidos-surfari.sh --self-test   # clean-room proof
 ```
 
-Also see [`docs/EIDOS_UPGRADE.md`](https://github.com/eidos-agi/surfari/blob/main/docs/EIDOS_UPGRADE.md) in the repo.
+Also see [`docs/EIDOS_UPGRADE.md`](https://github.com/eidos-agi/surfari/blob/main/docs/EIDOS_UPGRADE.md) and the tap [`eidos-agi/homebrew-tap`](https://github.com/eidos-agi/homebrew-tap).
 
 ## Doctor
 

@@ -30,7 +30,17 @@ https://github.com/eidos-agi/surfari/releases/latest/download/agent-browser-darw
 → ~/.local/share/eidos/surfari/bin/surfari
 ```
 
-## One-shot install (new machine)
+## Homebrew (macOS, preferred when available)
+
+```bash
+brew install eidos-agi/tap/surfari
+surfari install                 # Chrome for Testing (first browser use)
+brew upgrade surfari            # brew-native upgrade
+```
+
+Formula lives in [`eidos-agi/homebrew-tap`](https://github.com/eidos-agi/homebrew-tap). Same GitHub release assets as the curl installer; product binary name is `surfari`. **Not** Homebrew core `agent-browser`.
+
+## One-shot install (curl — any machine)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/eidos-agi/surfari/main/scripts/install-eidos-surfari.sh | bash
@@ -56,6 +66,10 @@ surfari open https://example.com
 ## Upgrade (months later)
 
 ```bash
+# Homebrew install
+brew upgrade surfari
+
+# curl / install-script install
 surfari upgrade                 # latest release asset via GitHub
 surfari upgrade v0.32.2         # pin a tag
 ```

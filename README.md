@@ -76,16 +76,20 @@ Detects your installation method (npm, Homebrew, or Cargo) and runs the appropri
 
 #### Eidos-AGI Surfari (this fork — GitHub release / web channel)
 
-For installs that track **eidos-agi/surfari GitHub releases** (product name `surfari`; release asset is still `agent-browser-*`), use the web installer — **not npm**:
+For installs that track **eidos-agi/surfari GitHub releases** (product name `surfari`; release asset is still `agent-browser-*`), use Homebrew or the web installer — **not npm**:
 
 ```bash
+# macOS (preferred when available)
+brew install eidos-agi/tap/surfari
+brew upgrade surfari
+
+# any machine
 curl -fsSL https://raw.githubusercontent.com/eidos-agi/surfari/main/scripts/install-eidos-surfari.sh | bash
 surfari upgrade                 # download latest release asset from GitHub
-surfari upgrade v0.32.2         # pin a tag
 bash scripts/install-eidos-surfari.sh --self-test
 ```
 
-Full notes: [docs/EIDOS_UPGRADE.md](./docs/EIDOS_UPGRADE.md) and the docs site page **Eidos Install & Upgrade**.
+Full notes: [docs/EIDOS_UPGRADE.md](./docs/EIDOS_UPGRADE.md), docs site **Eidos Install & Upgrade**, and the tap [eidos-agi/homebrew-tap](https://github.com/eidos-agi/homebrew-tap).
 
 ### Requirements
 
