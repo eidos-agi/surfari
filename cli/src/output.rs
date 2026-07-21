@@ -1262,6 +1262,7 @@ Usage:
   surfari browserbase create [--alias <name>] [--request-id <id>] [--ttl <seconds>] [--start-url <https-url>] [--context <alias>]
   surfari browserbase status <session-or-alias>
   surfari browserbase inspect <session-or-alias>
+  surfari browserbase use <alias> -- <command> [args...]
   surfari browserbase release <session-or-alias>
 
 Credentials come only from the encrypted broker. Persistent contexts preserve
@@ -3226,13 +3227,21 @@ Subcommands:
   get <name> --full          Include references and templates
   get --all                  Output every skill
   path [name]                Print filesystem path to skill directory
+  update [--ref <ref>]       Fetch the latest skill content into the cache
+  update --rollback          Restore the last-known-good cached content
 
 Options:
   --json                     Output as JSON
 
-The skills command serves bundled skill content that always matches the
-installed CLI version. Agents should use this to get current instructions
-rather than relying on cached copies.
+Skill content resolves in precedence order: an explicit
+AGENT_BROWSER_SKILLS_DIR override, then a verified external cache populated by
+`skills update`, then the content packaged with the CLI. `list`, `get`, and
+`path` never fetch — only `update` reaches the network.
+
+`skills update` fetches the public eidos-agi/surfari skill-data, records the
+exact commit it came from, validates it, and swaps it in atomically. A failed
+or offline update leaves the current content in place; `--rollback` restores
+the previous content.
 
 Examples:
   agent-browser skills
@@ -3243,9 +3252,15 @@ Examples:
   agent-browser skills get --all
   agent-browser skills path core
   agent-browser skills list --json
+  agent-browser skills update
+  agent-browser skills update --ref main
+  agent-browser skills update --rollback
 
 Environment:
-  AGENT_BROWSER_SKILLS_DIR   Override the skills directory path
+  AGENT_BROWSER_SKILLS_DIR            Override the skills directory path
+  AGENT_BROWSER_SKILLS_CACHE_DIR     Override the external cache location
+  AGENT_BROWSER_SKILLS_UPDATE_SOURCE Update from a local checkout instead of
+                                     the network
 "##
         }
 
