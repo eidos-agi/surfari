@@ -53,3 +53,25 @@ bash scripts/install-eidos-surfari.sh --self-test
 | `surfari upgrade` via the Eidos wrapper (curl install) | Trust raw binary `upgrade` without the wrapper |
 
 There is no npm package `surfari` / `@eidos-agi/surfari`. The release asset name remains `agent-browser-*` (upstream cargo name); product PATH name is `surfari`.
+
+## Licensing (Apache-2.0 redistribution)
+
+Upstream **agent-browser** is licensed under the **Apache License, Version 2.0** (Copyright 2025 Vercel Inc.). See [`LICENSE`](../LICENSE) and [`NOTICE`](../NOTICE).
+
+Eidos packaging (rename to `surfari`, installers, Homebrew formula) redistributes the **Object form** of that work. Apache-2.0 requires that redistributions include a copy of the License and retain attribution. Packaging does that as follows:
+
+| Channel | Where LICENSE / NOTICE land |
+|---------|-----------------------------|
+| curl installer | `~/.local/share/eidos/surfari/licenses/{LICENSE,NOTICE}` |
+| Homebrew | `$(brew --prefix surfari)/share/doc/surfari/{LICENSE,NOTICE}` |
+| Source checkout | repo root `LICENSE` + `NOTICE` |
+
+Rules of the road:
+
+- Keep **Apache-2.0** on all redistributed binaries and installers.
+- Do **not** strip or omit `LICENSE` / `NOTICE` from install prefixes.
+- Attribute **Vercel Inc.** / **agent-browser** as upstream; “Surfari” is the Eidos product/PATH name only.
+- Do **not** imply Vercel endorsement of the Eidos packaging or Browserbase integrations.
+- Installer and docs changes are Derivative Works; state material packaging changes in `NOTICE` / docs when they matter.
+
+Full SPDX: `Apache-2.0`.
