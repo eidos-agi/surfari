@@ -1,4 +1,4 @@
-//! Integration tests for `agent-browser doctor`.
+//! Integration tests for `surfari doctor`.
 //!
 //! These tests spawn the real CLI binary via `env!("CARGO_BIN_EXE_*")` and
 //! verify the doctor command produces sane output. They override
@@ -8,7 +8,7 @@
 use std::process::Command;
 use tempfile::TempDir;
 
-const BIN: &str = env!("CARGO_BIN_EXE_agent-browser");
+const BIN: &str = env!("CARGO_BIN_EXE_surfari");
 
 fn build_doctor_cmd(tmp: &TempDir, args: &[&str]) -> Command {
     let socket_dir = tmp.path().join("sockets");
@@ -35,7 +35,7 @@ fn doctor_offline_quick_json_emits_valid_payload() {
 
     let output = build_doctor_cmd(&tmp, &["doctor", "--offline", "--quick", "--json"])
         .output()
-        .expect("failed to invoke agent-browser doctor");
+        .expect("failed to invoke surfari doctor");
 
     let code = output.status.code().unwrap_or(-1);
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
@@ -113,7 +113,7 @@ fn doctor_help_describes_flags_and_examples() {
 
     let output = build_doctor_cmd(&tmp, &["doctor", "--help"])
         .output()
-        .expect("failed to invoke agent-browser doctor --help");
+        .expect("failed to invoke surfari doctor --help");
 
     assert!(
         output.status.success(),
@@ -124,7 +124,7 @@ fn doctor_help_describes_flags_and_examples() {
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf8");
 
     for needle in [
-        "agent-browser doctor",
+        "surfari doctor",
         "--offline",
         "--quick",
         "--fix",

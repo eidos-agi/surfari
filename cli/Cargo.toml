@@ -1,11 +1,11 @@
 [package]
-name = "agent-browser"
-version = "0.32.2"
+name = "surfari"
+version = "0.33.0"
 edition = "2021"
-description = "Fast browser automation CLI for AI agents"
+description = "Eidos browser automation CLI with governed Browserbase contexts"
 license = "Apache-2.0"
-repository = "https://github.com/vercel-labs/agent-browser"
-homepage = "https://agent-browser.dev"
+repository = "https://github.com/eidos-agi/surfari"
+homepage = "https://github.com/eidos-agi/surfari"
 readme = "../README.md"
 keywords = ["browser", "automation", "ai", "cdp", "chrome"]
 categories = ["command-line-utilities", "web-programming"]

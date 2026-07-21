@@ -299,6 +299,36 @@ pub async fn browserbase_create(api_key: &str, body: &Value) -> Result<Value, St
     .await
 }
 
+pub async fn browserbase_context_create(api_key: &str) -> Result<Value, String> {
+    browserbase_call(
+        reqwest::Client::new()
+            .post("https://api.browserbase.com/v1/contexts")
+            .header("Content-Type", "application/json")
+            .json(&json!({})),
+        api_key,
+    )
+    .await
+}
+
+pub async fn browserbase_context_delete(api_key: &str, context_id: &str) -> Result<(), String> {
+    let response = reqwest::Client::new()
+        .delete(format!(
+            "https://api.browserbase.com/v1/contexts/{context_id}"
+        ))
+        .header("X-BB-API-Key", api_key)
+        .send()
+        .await
+        .map_err(|_| "Browserbase request failed".to_string())?;
+    if response.status().is_success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "Browserbase API returned HTTP {}",
+            response.status().as_u16()
+        ))
+    }
+}
+
 pub async fn browserbase_status(api_key: &str, session_id: &str) -> Result<Value, String> {
     browserbase_call(
         reqwest::Client::new().get(format!(

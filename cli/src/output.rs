@@ -1237,7 +1237,7 @@ fn print_lifecycle_note(data: &serde_json::Value) {
     }
 
     if !parts.is_empty() {
-        eprintln!("{} {}", color::dim("[agent-browser]"), parts.join("; "));
+        eprintln!("{} {}", color::dim("[surfari]"), parts.join("; "));
     }
 }
 
@@ -1255,12 +1255,19 @@ pub fn print_command_help(command: &str) -> bool {
 surfari browserbase - Manage bounded Browserbase sessions
 
 Usage:
-  surfari browserbase create [--alias <name>] [--request-id <id>] [--ttl <seconds>] [--start-url <https-url>]
+  surfari browserbase context create --alias <name> [--request-id <id>]
+  surfari browserbase context list
+  surfari browserbase context status <alias>
+  surfari browserbase context revoke <alias> [--request-id <id>]
+  surfari browserbase create [--alias <name>] [--request-id <id>] [--ttl <seconds>] [--start-url <https-url>] [--context <alias>]
   surfari browserbase status <session-or-alias>
+  surfari browserbase inspect <session-or-alias>
+  surfari browserbase use <alias> -- <command> [args...]
   surfari browserbase release <session-or-alias>
 
-Credentials come only from the encrypted broker. Output never includes CDP
-connection URLs, signing tokens, or API keys.
+Credentials come only from the encrypted broker. Persistent contexts preserve
+browser authentication across released sessions. Output never includes context
+IDs, CDP connection URLs, signing tokens, or API keys.
 "##
         }
         // === Navigation ===
@@ -3220,13 +3227,21 @@ Subcommands:
   get <name> --full          Include references and templates
   get --all                  Output every skill
   path [name]                Print filesystem path to skill directory
+  update [--ref <ref>]       Fetch the latest skill content into the cache
+  update --rollback          Restore the last-known-good cached content
 
 Options:
   --json                     Output as JSON
 
-The skills command serves bundled skill content that always matches the
-installed CLI version. Agents should use this to get current instructions
-rather than relying on cached copies.
+Skill content resolves in precedence order: an explicit
+AGENT_BROWSER_SKILLS_DIR override, then a verified external cache populated by
+`skills update`, then the content packaged with the CLI. `list`, `get`, and
+`path` never fetch — only `update` reaches the network.
+
+`skills update` fetches the public eidos-agi/surfari skill-data, records the
+exact commit it came from, validates it, and swaps it in atomically. A failed
+or offline update leaves the current content in place; `--rollback` restores
+the previous content.
 
 Examples:
   agent-browser skills
@@ -3237,9 +3252,15 @@ Examples:
   agent-browser skills get --all
   agent-browser skills path core
   agent-browser skills list --json
+  agent-browser skills update
+  agent-browser skills update --ref main
+  agent-browser skills update --rollback
 
 Environment:
-  AGENT_BROWSER_SKILLS_DIR   Override the skills directory path
+  AGENT_BROWSER_SKILLS_DIR            Override the skills directory path
+  AGENT_BROWSER_SKILLS_CACHE_DIR     Override the external cache location
+  AGENT_BROWSER_SKILLS_UPDATE_SOURCE Update from a local checkout instead of
+                                     the network
 "##
         }
 
@@ -3308,12 +3329,14 @@ Examples:
 
         _ => return false,
     };
-    println!("{}", help.trim());
+    println!("{}", branded_help(help).trim());
     true
 }
 
 pub fn print_help() {
     println!(
+        "{}",
+        branded_help(
         r#"
 agent-browser - fast browser automation CLI for AI agents
 
@@ -3703,7 +3726,17 @@ iOS Simulator (requires Xcode and Appium):
   agent-browser -p ios swipe up                            # Swipe gesture
   agent-browser -p ios tap @e1                             # Touch element
 "#
+        )
+        .trim()
     );
+}
+
+fn branded_help(help: &str) -> String {
+    help.replace("agent-browser", "surfari")
+        // These are upstream-compatible data/config identifiers, not the executable.
+        .replace("surfari.json", "agent-browser.json")
+        .replace("~/.surfari/", "~/.agent-browser/")
+        .replace("surfari-plugin", "agent-browser-plugin")
 }
 
 fn print_snapshot_diff(data: &serde_json::Map<String, serde_json::Value>) {
@@ -3783,7 +3816,7 @@ fn print_screenshot_diff(data: &serde_json::Map<String, serde_json::Value>) {
 }
 
 pub fn print_version() {
-    println!("agent-browser {}", env!("CARGO_PKG_VERSION"));
+    println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 }
 
 #[cfg(test)]
@@ -3793,6 +3826,23 @@ mod tests {
         OutputOptions,
     };
     use serde_json::json;
+
+    #[test]
+    fn package_identity_is_surfari() {
+        assert_eq!(env!("CARGO_PKG_NAME"), "surfari");
+        assert_eq!(env!("CARGO_PKG_VERSION"), "0.33.0");
+    }
+
+    #[test]
+    fn help_uses_surfari_without_renaming_legacy_config_protocols() {
+        let rendered = super::branded_help(
+            "agent-browser open\n./agent-browser.json\n~/.agent-browser/config.json\nagent-browser-plugin-vault",
+        );
+        assert_eq!(
+            rendered,
+            "surfari open\n./agent-browser.json\n~/.agent-browser/config.json\nagent-browser-plugin-vault"
+        );
+    }
 
     #[test]
     fn test_format_stream_status_text_for_enabled_stream() {
