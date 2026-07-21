@@ -1,6 +1,7 @@
 export const PAGE_TITLES: Record<string, string> = {
   "": "Browser\nAutomation for AI",
   installation: "Installation",
+  "eidos-upgrade": "Eidos Install & Upgrade",
   "quick-start": "Quick Start",
   skills: "Skills",
   commands: "Commands",

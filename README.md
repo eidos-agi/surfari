@@ -74,6 +74,19 @@ agent-browser upgrade
 
 Detects your installation method (npm, Homebrew, or Cargo) and runs the appropriate update command automatically.
 
+#### Eidos-AGI Surfari (this fork — GitHub release / web channel)
+
+For installs that track **eidos-agi/surfari GitHub releases** (product name `surfari`; release asset is still `agent-browser-*`), use the web installer — **not npm**:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/eidos-agi/surfari/main/scripts/install-eidos-surfari.sh | bash
+surfari upgrade                 # download latest release asset from GitHub
+surfari upgrade v0.32.2         # pin a tag
+bash scripts/install-eidos-surfari.sh --self-test
+```
+
+Full notes: [docs/EIDOS_UPGRADE.md](./docs/EIDOS_UPGRADE.md) and the docs site page **Eidos Install & Upgrade**.
+
 ### Requirements
 
 - **Chrome** - Run `agent-browser install` to download Chrome from [Chrome for Testing](https://developer.chrome.com/blog/chrome-for-testing/) (Google's official automation channel). Existing Chrome, Brave, Playwright, and Puppeteer installations are detected automatically. No Playwright or Node.js required for the daemon.
